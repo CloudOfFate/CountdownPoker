@@ -1,0 +1,498 @@
+﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public static class Evaluator
+{
+	private static bool IsHandOnePair(Card[] _Hand)
+	{
+		for(int a = 0; a < _Hand.Length; a++)
+		{
+			for(int b = 0; b < _Hand.Length; b++)
+			{
+				if(_Hand[b] != _Hand[a] && _Hand[b].Value == _Hand[a].Value)
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	private static bool IsHandTwoPair(Card[] _Hand)
+	{
+		bool FirstPairCheck = false;
+		bool SecondPairCheck = false;
+		int FirstPairValue = 0;
+		int SecondPairValue = 0;
+		
+		for(int a = 0; a < _Hand.Length; a++)
+		{
+			for(int b = 0; b < _Hand.Length; b++)
+			{
+				if(_Hand[b] != _Hand[a] && _Hand[b].Value == _Hand[a].Value)
+				{
+					if(FirstPairCheck == false && SecondPairCheck == false){FirstPairValue = (int) _Hand[a].Value; FirstPairCheck = true;}
+					if((int) _Hand[a].Value != FirstPairValue && FirstPairCheck == true && SecondPairCheck == false){SecondPairValue = (int) _Hand[a].Value; SecondPairCheck = true;}
+					break;
+				}
+			}
+			if(FirstPairCheck == true && SecondPairCheck == true){return true;}
+		}
+		
+		return false;
+	}
+	
+	private static bool IsHandThreeOfAKind(Card[] _Hand)
+	{
+		int CheckAgainst = 0;
+	
+		for(int a = 0; a < _Hand.Length; a++)
+		{
+			for(int b = 0; b < _Hand.Length; b++)
+			{
+				if(_Hand[b] != _Hand[a] && _Hand[b].Value == _Hand[a].Value)
+				{
+					CheckAgainst++;
+				}
+			}
+			if(CheckAgainst >= 2){return true;}
+			else{CheckAgainst = 0;}
+		}
+		
+		return false;
+	}
+	
+	private static bool IsHandStraight(Card[] _Hand)
+	{
+		int LowestCardValue = 99;
+		
+		for(int i = 0; i < _Hand.Length; i++)
+		{
+			if((int) _Hand[i].Value < LowestCardValue)
+			{
+				LowestCardValue = (int) _Hand[i].Value;
+			}
+		}
+		
+		int CheckCardValue = LowestCardValue;
+		int NextCardValue = LowestCardValue + 1;
+		
+		for(int a = 0; a < _Hand.Length - 1; a++)
+		{	
+			for(int i = 0; i < _Hand.Length; i++)
+			{
+				if((int) _Hand[i].Value == NextCardValue){CheckCardValue = NextCardValue; break;}
+			}
+			
+			if(CheckCardValue == NextCardValue){NextCardValue++;}
+			else if(CheckCardValue != NextCardValue){return false;}
+		}
+		
+		return true;
+	}
+	
+	private static bool IsHandFlush(Card[] _Hand)
+	{
+		for(int a = 0; a < _Hand.Length; a++)
+		{
+			for(int b = 0; b < _Hand.Length; b++)
+			{
+				if(_Hand[b] != _Hand[a] && _Hand[b].Suit != _Hand[a].Suit){return false;}
+			}
+		}
+		return true;
+	}
+	
+	private static bool IsHandFullhouse(Card[] _Hand)
+	{
+		int FirstSetValue = 0;
+		int FSFirstIndex = 0;
+		int FSSecondIndex = 0;
+		
+		
+		for(int a = 0; a < _Hand.Length; a++)
+		{
+			for(int b = 0; b < _Hand.Length; b++)
+			{
+				if(_Hand[b] != _Hand[a] && _Hand[b].Value == _Hand[a].Value)
+				{
+					FirstSetValue = (int) _Hand[a].Value;
+					FSFirstIndex = a;
+					FSSecondIndex = b;
+					break;
+				}
+			}
+		}
+		
+		int IdenticalCounter = 0;
+		int CheckValue = 0;
+		
+		for(int a = 0; a < _Hand.Length; a++)
+		{
+			if(a != FSFirstIndex && a != FSSecondIndex)
+			{
+				if(IdenticalCounter == 0)
+				{
+					CheckValue = (int) _Hand[a].Value;
+					IdenticalCounter++;
+				}
+				else if(IdenticalCounter >= 1 && IdenticalCounter < 3)
+				{
+					if((int) _Hand[a].Value != CheckValue){return false;}
+					else{IdenticalCounter++;}
+				}
+			}
+		}
+		
+		if(IdenticalCounter >= 3){return true;}
+		return false;
+	}
+	
+	private static bool IsHandFourOfAKind(Card[] _Hand)
+	{
+		int CheckAgainst = 0;
+		
+		for(int a = 0; a < _Hand.Length; a++)
+		{
+			for(int b = 0; b < _Hand.Length; b++)
+			{
+				if(_Hand[b] != _Hand[a] && _Hand[b].Value == _Hand[a].Value)
+				{
+					CheckAgainst++;
+				}
+			}
+			if(CheckAgainst >= 3){return true;}
+			else{CheckAgainst = 0;}
+		}
+		
+		return false;
+	}
+	
+	private static bool IsHandStraightFlush(Card[] _Hand)
+	{
+		if(IsHandFlush(_Hand) && IsHandStraight(_Hand)){return true;}
+		return false;
+	}
+	
+	private static bool IsHandRoyalFlush(Card[] _Hand)
+	{
+		if(IsHandFlush(_Hand) && IsHandStraight(_Hand))
+		{
+			for(int i = 0; i < _Hand.Length; i++)
+			{
+				if((int) _Hand[i].Value < 8){return false;}
+			}
+			return true;
+		}
+		
+		return false;
+	}
+
+	public static Hands EvaluateHand(List<Card> _Hand)
+	{
+		Card[] Hand = _Hand.ToArray();
+
+		if(IsHandRoyalFlush(Hand)){return Hands.RoyalFlush;}
+		
+		if(IsHandStraightFlush(Hand)){return Hands.StraightFlush;}
+		
+		if(IsHandFourOfAKind(Hand)){return Hands.FourOfAKind;}
+		
+		if(IsHandFullhouse(Hand)){return Hands.FullHouse;}
+		
+		if(IsHandFlush(Hand)){return Hands.Flush;}
+		
+		if(IsHandStraight(Hand)){return Hands.Straight;}
+		
+		if(IsHandThreeOfAKind(Hand)){return Hands.ThreeOfAKind;}
+		
+		if(IsHandTwoPair(Hand)){return Hands.TwoPair;}
+		
+		if(IsHandOnePair(Hand)){return Hands.OnePair;}
+		
+		return Hands.HighCard;
+	}
+	
+	public static Player EvaluateHandWinner(Player _first, Player _second)
+	{
+		if(_first.Fold || _first.Busted){return _second;}
+		if(_second.Fold || _second.Busted){return _first;}
+	
+		Hands P1HandType = EvaluateHand(_first.Hand);
+		Hands P2HandType = EvaluateHand(_second.Hand);
+		int P1HandTypeScore = (int) P1HandType;
+		int P2HandTypeScore = (int) P2HandType;
+		
+		if(P1HandTypeScore != P2HandTypeScore){return P1HandTypeScore > P2HandTypeScore ? _first : _second;}
+		
+		if(P1HandType == Hands.HighCard)
+		{
+			int P1HighestValue = 0;
+			int P1HighestSuit = 0;
+			int P2HighestValue = 0;
+			int P2HighestSuit = 0;
+			for(int i = 0; i < 5; i++)
+			{
+				if((int) _first.Hand[i].Value > P1HighestValue){P1HighestValue = (int) _first.Hand[i].Value; P1HighestSuit = (int) _first.Hand[i].Suit;}
+				if((int) _second.Hand[i].Value > P2HighestValue){P2HighestValue = (int) _second.Hand[i].Value; P2HighestSuit = (int) _second.Hand[i].Suit;}
+			}
+			if(P1HighestValue != P2HighestValue) {return P1HighestValue > P2HighestValue ? _first : _second;}
+			else{return P1HighestSuit > P2HighestSuit ? _first : _second;}
+		}
+		else if(P1HandType == Hands.OnePair)
+		{
+			int P1PairValue = 0;
+			int P1HighestSuit = 0;
+			int P2PairValue = 0;
+			int P2HighestSuit = 0;
+
+			for(int a = 0; a < 5; a++)
+			{
+				for(int b = 0; b < 5; b++)
+				{
+					if(_first.Hand[b] != _first.Hand[a] && _first.Hand[b].Value == _first.Hand[a].Value)
+					{
+						P1PairValue = (int) _first.Hand[a].Value; 
+						P1HighestSuit = (int) _first.Hand[a].Suit + (int) _first.Hand[b].Suit;
+						break;
+					}
+				}
+			}
+			for(int a = 0; a < 5; a++)
+			{
+				for(int b = 0; b < 5; b++)
+				{
+					if(_second.Hand[b] != _second.Hand[a] && _second.Hand[b].Value == _second.Hand[a].Value)
+					{
+						P2PairValue = (int) _second.Hand[a].Value; 
+						P2HighestSuit = (int) _second.Hand[a].Suit + (int) _second.Hand[b].Suit;
+						break;
+					}
+				}
+			}
+			
+			if(P1PairValue != P2PairValue){return P1PairValue > P2PairValue ? _first : _second;}
+			else{return P1HighestSuit > P2HighestSuit ? _first : _second;}
+			
+		}
+		else if(P1HandType == Hands.TwoPair)
+		{
+			int P1FirstPairValue = 0;
+			int P1FirstPairSuitsScore = 0;
+			int P1SecondPairValue = 0;
+			int P1SecondPairSuitsScore = 0;
+			int P2FirstPairValue = 0;
+			int P2FirstPairSuitsScore = 0;
+			int P2SecondPairValue = 0;
+			int P2SecondPairSuitsScore = 0;
+
+			for(int a = 0; a < _first.Hand.Count; a++)
+			{
+				for(int b = 0; b < _first.Hand.Count; b++)
+				{
+					if(_first.Hand[b] != _first.Hand[a] && _first.Hand[b].Value == _first.Hand[a].Value && (int) _first.Hand[a].Value != P1FirstPairValue && (int) _first.Hand[a].Value != P1SecondPairValue)
+					{
+						if(P1FirstPairValue == 0){P1FirstPairValue = (int) _first.Hand[a].Value; P1FirstPairSuitsScore = (int)_first.Hand[a].Suit + (int)_first.Hand[b].Suit;}
+						else{P1SecondPairValue = (int) _first.Hand[a].Value; P1SecondPairSuitsScore = (int)_first.Hand[a].Suit + (int)_first.Hand[b].Suit;}
+					}
+
+					if(_second.Hand[b] != _second.Hand[a] && _second.Hand[b].Value == _second.Hand[a].Value && (int) _second.Hand[a].Value != P1FirstPairValue && (int) _second.Hand[a].Value != P1SecondPairValue)
+					{
+						if(P2FirstPairValue == 0){P2FirstPairValue = (int) _second.Hand[a].Value; P2FirstPairSuitsScore = (int)_second.Hand[a].Suit + (int)_second.Hand[b].Suit;}
+						else{P2SecondPairValue = (int) _second.Hand[a].Value; P2SecondPairSuitsScore = (int) _second.Hand[a].Suit + (int) _second.Hand[b].Suit;}
+					}
+				}
+			}
+
+			if((P1FirstPairValue > P2FirstPairValue) || (P1FirstPairValue > P2SecondPairValue) || (P1SecondPairValue > P2FirstPairValue) || (P1SecondPairValue > P2SecondPairValue)){return _first;}
+			if((P2FirstPairValue > P1FirstPairValue) || (P2FirstPairValue > P2SecondPairValue) || (P1SecondPairValue > P2FirstPairValue) || (P1SecondPairValue > P2SecondPairValue)){return _second;}
+
+			return P1FirstPairSuitsScore > P2SecondPairSuitsScore ? _first : _second;
+		}
+		else if(P1HandType == Hands.ThreeOfAKind)
+		{
+			int P1ThreeKindValue = 0;
+			int P1ThreeKindSuits = 0;
+			int P2ThreeKindValue = 0;
+			int P2ThreeKindSuits = 0;
+			int CheckAgainst = 0;
+			
+			for(int a = 0; a < _first.Hand.Count; a++)
+			{
+				for(int b = 0; b < _first.Hand.Count; b++)
+				{
+					if(_first.Hand[b] != _first.Hand[a] && _first.Hand[b].Value == _first.Hand[a].Value)
+					{
+						P1ThreeKindValue = (int) _first.Hand[a].Value;
+						P1ThreeKindSuits += (int) _first.Hand[b].Suit;
+						CheckAgainst++;
+					}
+				}
+				if(CheckAgainst >= 2){break;}
+				else{CheckAgainst = 0; P1ThreeKindValue = 0;P1ThreeKindSuits = 0;}
+			}
+
+			CheckAgainst = 0;
+
+			for(int a = 0; a < _second.Hand.Count; a++)
+			{
+				for(int b = 0; b < _second.Hand.Count; b++)
+				{
+					if(_second.Hand[b] != _second.Hand[a] && _second.Hand[b].Value == _second.Hand[a].Value)
+					{
+						P2ThreeKindSuits += (int) _second.Hand[b].Value;
+						P2ThreeKindValue = (int) _second.Hand[a].Value;
+						CheckAgainst++;
+					}
+				}
+				if(CheckAgainst >= 2){break;}
+				else{CheckAgainst = 0; P2ThreeKindValue = 0; P1ThreeKindSuits = 0;}
+			}
+
+			if(P1ThreeKindValue != P2ThreeKindValue){ return P1ThreeKindValue > P2ThreeKindValue ? _first : _second;}
+			else{return P1ThreeKindSuits > P2ThreeKindSuits ? _first : _second;} 
+		}
+		else if(P1HandType == Hands.Straight)
+		{
+			int P1StraightValue = 0;
+			int P1StraightSuits = 0;
+			int P2StraightValue = 0;
+			int P2StraightSuits = 0;
+
+			for(int i = 0; i < _first.Hand.Count; i++)
+			{
+				P1StraightValue += (int) _first.Hand[i].Value;
+				P1StraightSuits += (int) _first.Hand[i].Suit;
+				P2StraightValue += (int) _second.Hand[i].Value;
+				P2StraightSuits += (int) _second.Hand[i].Suit;
+			}
+
+			if(P1StraightValue != P2StraightValue){return P1StraightValue > P2StraightValue ? _first : _second;}
+			else{return P1StraightSuits > P2StraightSuits ? _first : _second;}
+		}
+		else if(P1HandType == Hands.Flush)
+		{
+			if(_first.Hand[0].Suit != _second.Hand[0].Suit){return (int) _first.Hand[0].Suit > (int) _second.Hand[0].Suit ? _first : _second;}
+
+			int P1FlushValue = 0;
+			int P2FlushValue = 0;
+			for(int i = 0; i < _first.Hand.Count; i++)
+			{
+				P1FlushValue += _first.Hand[i].Value;
+				P2FlushValue += _second.Hand[i].Value;
+			}
+
+			return P1FlushValue > P2FlushValue ? _first : _second;
+		}
+		else if(P1HandType == Hands.FullHouse)
+		{
+			int P1FirstSetValue = 0;
+			int P1FirstIndex = 0;
+			int P1SecondIndex = 0;
+			int P2FirstSetValue = 0;
+			int P2FirstIndex = 0;
+			int P2SecondIndex = 0;
+			
+			for(int a = 0; a < _first.Hand.Count; a++)
+			{
+				for(int b = 0; b < _first.Hand.Count; b++)
+				{
+					if(P1FirstSetValue != 0 && _first.Hand[b] != _first.Hand[a] && _first.Hand[b].Value == _first.Hand[a].Value)
+					{
+						P1FirstSetValue = (int) _first.Hand[a].Value;
+						P1FirstIndex = a;
+						P1SecondIndex = b;
+					}
+					else if(P2FirstSetValue != 0 && _second.Hand[b] != _second.Hand[a] && _second.Hand[b].Value == _second.Hand[a].Value)
+					{
+						P2FirstSetValue = (int) _second.Hand[a].Value;
+						P2FirstIndex = a;
+						P2SecondIndex = b;
+					}
+				}
+			}
+
+			int P1ThreeValue = 0;
+			int P1ThreeSuits = 0;
+			int P2ThreeValue = 0;
+			int P2ThreeSuits = 0;
+
+
+			for(int a = 0; a < _first.Hand.Count; a++)
+			{
+				if(a != P1FirstIndex && a != P1SecondIndex)
+				{
+					P1ThreeSuits = (int) _first.Hand[a].Suit;
+					P1ThreeValue = (int) _first.Hand[a].Value;
+				}
+
+				if(a != P2FirstIndex && a != P2SecondIndex)
+				{
+					P2ThreeSuits = (int) _second.Hand[a].Suit;
+					P2ThreeValue = (int) _second.Hand[a].Value;
+				}
+			}
+
+			if(P1ThreeValue != P2ThreeValue){return P1ThreeValue > P2ThreeValue ? _first : _second;}
+			return P1ThreeSuits > P2ThreeSuits ? _first : _second;
+		}
+		else if(P1HandType == Hands.FourOfAKind)
+		{
+			int P1FourValue = 0;
+			int P1FourSuit = 0;
+			int P1CheckAgainst = 0;
+			int P2FourValue = 0;
+			int P2FourSuit = 0;
+			int P2CheckAgainst = 0;
+
+			for(int a = 0; a < _first.Hand.Count; a++)
+			{
+				for(int b = 0; b < _first.Hand.Count; b++)
+				{
+					if(_first.Hand[b] != _first.Hand[a] && _first.Hand[b].Value == _first.Hand[a].Value)
+					{
+						P1FourValue = (int) _first.Hand[a].Value;
+						P1FourSuit = (int) _first.Hand[a].Suit;
+						P1CheckAgainst++;
+					}
+
+					if(_second.Hand[b] != _second.Hand[a] && _second.Hand[b].Value == _second.Hand[a].Value)
+					{
+						P2FourValue = (int) _second.Hand[a].Value;
+						P2FourSuit = (int) _second.Hand[a].Suit;
+						P2CheckAgainst++;
+					}
+				}
+				if(P1CheckAgainst < 3){P1CheckAgainst = 0;}
+				if(P2CheckAgainst < 3){P2CheckAgainst = 0;}
+			}
+
+			if(P1FourValue != P2FourValue){return P1FourValue > P2FourValue ? _first : _second;}
+			return P1FourSuit > P2FourSuit ? _first : _second;
+		}
+		else if(P1HandType == Hands.StraightFlush)
+		{
+			int P1StraightValue = 0;
+			int P1StraightSuits = (int) _first.Hand[0].Suit;
+			int P2StraightValue = 0;
+			int P2StraightSuits = (int) _second.Hand[0].Suit;
+			
+			for(int i = 0; i < _first.Hand.Count; i++)
+			{
+				P1StraightValue += (int) _first.Hand[i].Value;
+				P2StraightValue += (int) _second.Hand[i].Value;
+			}
+			
+			if(P1StraightValue != P2StraightValue){return P1StraightValue > P2StraightValue ? _first : _second;}
+			else{return P1StraightSuits > P2StraightSuits ? _first : _second;}
+		}
+		else if(P1HandType == Hands.RoyalFlush)
+		{
+			int P1SuitValue = (int) _first.Hand[0].Suit;
+			int P2SuitValue = (int) _second.Hand[0].Suit;
+			return P1SuitValue > P2SuitValue ? _first : _second;
+		}
+		return null;
+	}
+}

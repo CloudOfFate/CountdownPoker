@@ -1,0 +1,122 @@
+﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class BettingManager 
+{
+	private GameManager GM;
+	private Player m_DealingPlayer;
+	public Player DealingPlayer {get{return m_DealingPlayer;} set{m_DealingPlayer = value;}}
+	private Player m_SmallBindPlayer;
+	public Player SmallBindPlayer {get{return m_SmallBindPlayer;} set{m_SmallBindPlayer = value;}}
+	private Player m_LargeBindPlayer;
+	public Player LargeBindPlayer {get{return m_LargeBindPlayer;} set{m_LargeBindPlayer = value;}}
+	private Player m_FirstPlayer;
+	public Player FirstPlayer {get{return m_FirstPlayer;} set{m_FirstPlayer = value;}}
+	
+	private int fSmallBindValue;
+	private int fLargeBindValue;
+	public int SmallBind{get{return fSmallBindValue;}set{fSmallBindValue = value;}}
+	public int LargeBind{get{return fLargeBindValue;}set{fLargeBindValue = value;}}
+	
+	private bool mb_BetMadeThisRound;
+	public bool BetMadeThisRound{get{return mb_BetMadeThisRound;} set{mb_BetMadeThisRound = value;}}
+	
+	public BettingManager(GameManager _GM)
+	{
+		GM = _GM;
+		InitializePlayersDealAndBind();
+		fSmallBindValue = 5;
+		fLargeBindValue = 10;
+	}
+
+	public void InitializePlayersDealAndBind()
+	{
+		int index = Random.Range(0,4);
+		m_DealingPlayer = GM.Players[index];
+		
+		index++;
+		if(index > 3){index = 0;}
+		
+		m_SmallBindPlayer = GM.Players[index];
+		
+		index++;
+		if(index > 3){index = 0;}
+		
+		m_LargeBindPlayer = GM.Players[index];
+		
+		index++;
+		if(index > 3){index = 0;}
+		
+		m_FirstPlayer = GM.Players[index];
+	}
+	
+	public void IncreaseBinds()
+	{
+		fSmallBindValue += 5;
+		fLargeBindValue += 5;
+	}
+	
+	public void ShiftDealerAndBinds()
+	{
+		int PlayerAmount = GM.Players.Length - 1;
+	
+		int NextDealingIndex = m_DealingPlayer.Index;
+		if(NextDealingIndex > PlayerAmount){NextDealingIndex = 0;}
+		while(GM.Players[NextDealingIndex].Busted)
+		{
+			NextDealingIndex++;
+			if(NextDealingIndex > PlayerAmount){NextDealingIndex = 0;}
+		}
+		
+		int NextSmallBindIndex = NextDealingIndex + 1;
+		if(NextSmallBindIndex > PlayerAmount){NextSmallBindIndex = 0;}
+		while(GM.Players[NextSmallBindIndex].Busted)
+		{
+			NextSmallBindIndex++;
+			if(NextSmallBindIndex > PlayerAmount){NextSmallBindIndex = 0;}
+		}
+		
+		int NextLargeBindIndex = NextSmallBindIndex + 1;
+		if(NextLargeBindIndex > PlayerAmount){NextLargeBindIndex = 0;}
+		while(GM.Players[NextLargeBindIndex].Busted)
+		{
+			NextLargeBindIndex++;
+			if(NextLargeBindIndex > PlayerAmount){NextLargeBindIndex = 0;}
+		}
+		
+		int NextFirstPlayerIndex = NextLargeBindIndex + 1;
+		if(NextFirstPlayerIndex > PlayerAmount){NextFirstPlayerIndex = 0;}
+		while(GM.Players[NextFirstPlayerIndex].Busted)
+		{
+			NextFirstPlayerIndex++;
+			if(NextFirstPlayerIndex > PlayerAmount){NextFirstPlayerIndex = 0;}
+		}
+		
+		m_DealingPlayer = GM.Players[NextDealingIndex];
+		m_SmallBindPlayer = GM.Players[NextSmallBindIndex];
+		m_LargeBindPlayer = GM.Players[NextLargeBindIndex];
+		m_FirstPlayer = GM.Players[NextFirstPlayerIndex];
+		
+		/*int NextDealingIndex = m_DealingPlayer.Index;
+		if(NextDealingIndex > 3){NextDealingIndex = 0;}
+		int NextSmallBindIndex = m_SmallBindPlayer.Index;
+		if(NextSmallBindIndex > 3){NextSmallBindIndex = 0;}
+		int NextLargeBindIndex = m_LargeBindPlayer.Index;
+		if(NextLargeBindIndex > 3){NextLargeBindIndex = 0;}
+		
+		m_DealingPlayer = GM.Players[NextDealingIndex];
+		m_SmallBindPlayer = GM.Players[NextSmallBindIndex];
+		m_LargeBindPlayer = GM.Players[NextLargeBindIndex];*/
+	}
+	
+	public int GetAmountOfBustedPlayers()
+	{
+		int busted = 0;
+		for(int i = 0; i < GM.Players.Length; i++)
+		{
+			if(GM.Players[i].Busted){busted++;}
+		}
+		return busted;
+	}
+}

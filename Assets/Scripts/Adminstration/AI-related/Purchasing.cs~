@@ -1,0 +1,8 @@
+﻿public class Purchasing 
+{
+	public AggressiveLevel Aggressiveness;
+	public ValueOfProjectedHand ProjectedHandValue;
+	public PlayerMoney PlayerMoney;
+	public Earning Earning;
+	public Desirability Desirability;
+}

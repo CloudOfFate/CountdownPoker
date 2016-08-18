@@ -1,0 +1,772 @@
+﻿using UnityEngine;
+using UnityEngine.UI;
+using System.Collections;
+using System.Collections.Generic;
+
+public class GameManager : MonoBehaviour {
+
+	private Deck m_Deck;
+	public Deck Deck{get{ return m_Deck;}}
+
+	private BettingManager m_Betting;
+	public BettingManager Betting{get{return m_Betting;} set{m_Betting = value;}}
+	private AuctionManager m_Auction;
+	public AuctionManager Auction{get{return m_Auction;} set{m_Auction = value;}}
+
+	private Dealer m_Dealer;
+	public Dealer Dealer{get{ return m_Dealer;}}
+	
+	private Player[] m_Players;
+	public Player[] Players{get{ return m_Players;} set{m_Players = value;}}
+	
+	private Table m_Table;
+	public Table Table{get{ return m_Table;}}
+
+	private TurnPhase m_Phase;
+	public TurnPhase Phase{get{return m_Phase;} set{m_Phase = value;}}
+	private AuctionPhase m_AuctionPhase;
+	public AuctionPhase AuctionPhase{get{return m_AuctionPhase;} set{m_AuctionPhase = value;}}
+	
+	private PlayerControl m_Control;
+	public PlayerControl Control{get{return m_Control;} set{m_Control = value;}}
+	
+	private Text AnnouncementText;
+	private Text HandTypeText;
+	private Text RoundText;
+	private Slider m_RaiseSlider;
+	public Slider RaiseSlider {get{return m_RaiseSlider;} set{m_RaiseSlider = value;}}
+	
+	private int m_PlayerTurn;
+	private int m_AuctionRound;//multiple rounds per auction phase
+	private int m_Rounds;
+	private GameObject m_PlayerLeftButton;
+	private GameObject m_PlayerRightButton;
+	private GameObject m_PlayerAllInButton;
+	private RectTransform m_TurnPointer;
+	private Vector2[] m_PointerPositions;
+	private Vector3[] m_PointerRotations;
+	
+	private bool mb_ShowdownStarted;
+	private bool mb_GameOngoing;
+	private bool mb_Auctioning;
+	private bool mb_Selecting;
+	public bool Selecting{get{return mb_Selecting;} set{mb_Selecting = value;}}
+	
+	// Use this for initialization
+	void Start () 
+	{
+		m_Deck = new Deck();
+		m_Dealer = new Dealer(this);
+		m_Players = new Player[4];
+		m_Players[0] = new Player(1,100,true);
+		m_Players[1] = new Player(2,100,false);
+		m_Players[2] = new Player(3,10,false);
+		m_Players[3] = new Player(4,100,false);
+		m_Table = new Table(this);
+		m_Betting = new BettingManager(this);
+		m_Auction = new AuctionManager(this);
+		AnnouncementText = GameObject.Find("AnnoucementText").GetComponent<Text>();
+		HandTypeText = GameObject.Find("HandtypeCounter").GetComponent<Text>();
+		RoundText = GameObject.Find("RoundCounter").GetComponent<Text>();
+		m_RaiseSlider = GameObject.Find("RaiseSlider").GetComponent<Slider>();
+		m_PlayerLeftButton = GameObject.Find("ShowHand Button");
+		m_PlayerRightButton = GameObject.Find("Fold Button");
+		m_PlayerAllInButton = GameObject.Find("AllIn Button");
+		m_TurnPointer = GameObject.Find("TurnPointer").GetComponent<RectTransform>();
+		m_PointerPositions = new Vector2[4];
+		m_PointerPositions[0] = new Vector2(0,-40);
+		m_PointerPositions[1] = new Vector2(-210,0);
+		m_PointerPositions[2] = new Vector2(0,90);
+		m_PointerPositions[3] = new Vector2(210,0);
+		m_PointerRotations = new Vector3[4];
+		m_PointerRotations[0] = Vector3.zero;
+		m_PointerRotations[1] = new Vector3(0.0f,0.0f,-90.0f);
+		m_PointerRotations[2] = new Vector3(0.0f,0.0f,-180.0f);
+		m_PointerRotations[3] = new Vector3(0.0f,0.0f,90.0f);
+		m_Control = GetComponent<PlayerControl>();
+		mb_ShowdownStarted = false;
+		
+		m_Phase = TurnPhase.Initial;
+		m_AuctionPhase = AuctionPhase.NULL;
+		mb_GameOngoing = true;
+		mb_Auctioning = false;
+		mb_Selecting = false;
+		m_Rounds = 0;
+		AnnouncementText.enabled = false;
+		
+		Table.ResetTable();
+		m_Betting.InitializePlayersDealAndBind();
+	}
+	
+	// Update is called once per frame
+	void Update () 
+	{
+		for(int i = 0; i < m_Players.Length; i++){m_Players[i].UpdateFinancialStatus();}
+		Table.RefreshPoolMoney();
+		
+		//Debug.Log("Turnphase: " + Phase);
+		//Debug.Log("Auctionphase: " + AuctionPhase);
+
+		if(mb_GameOngoing)
+		{
+			if(m_Phase == TurnPhase.Initial)
+			{
+				Table.ResetTable();
+				
+				m_Rounds++;
+				RoundText.text = RoundText.text.Remove(6) + m_Rounds.ToString();
+				
+				if(Players[m_Betting.SmallBindPlayer.Index-1].Money >= m_Betting.SmallBind){Players[m_Betting.SmallBindPlayer.Index - 1].Money -= m_Betting.SmallBind; Players[m_Betting.SmallBindPlayer.Index - 1].OnTheBet += m_Betting.SmallBind; Table.PoolMoney += m_Betting.SmallBind;}
+				else{Players[m_Betting.SmallBindPlayer.Index-1].OnTheBet = Players[m_Betting.SmallBindPlayer.Index-1].Money; Table.PoolMoney += Players[m_Betting.SmallBindPlayer.Index-1].Money; Players[m_Betting.SmallBindPlayer.Index-1].Money = 0;}
+				
+				if(Players[m_Betting.LargeBindPlayer.Index-1].Money >= m_Betting.LargeBind){Players[m_Betting.LargeBindPlayer.Index - 1].Money -= m_Betting.LargeBind; Players[m_Betting.LargeBindPlayer.Index - 1].OnTheBet += m_Betting.LargeBind; Table.PoolMoney += m_Betting.LargeBind;}
+				else{Players[m_Betting.LargeBindPlayer.Index-1].OnTheBet = Players[m_Betting.LargeBindPlayer.Index-1].Money; Table.PoolMoney += Players[m_Betting.LargeBindPlayer.Index-1].Money; Players[m_Betting.LargeBindPlayer.Index-1].Money = 0;}
+
+				m_RaiseSlider.minValue = 0;
+				m_RaiseSlider.maxValue = Players[0].Money;
+				m_RaiseSlider.value = m_RaiseSlider.minValue;
+				m_RaiseSlider.enabled = true;
+				
+				m_PlayerTurn = m_Betting.FirstPlayer.Index - 1;
+				if(m_PlayerTurn > 3){m_PlayerTurn = 0;}
+				Betting.BetMadeThisRound = true;
+				m_Phase = TurnPhase.Betting;
+				
+				RefreshPointer();
+				UpdateHandTypeCounter();
+				m_Control.AllInButton.interactable = true;
+				
+				m_PlayerRightButton.GetComponentInChildren<Text>().text = "Fold";
+				
+				if(m_Betting.DealingPlayer.Index == 1){Debug.Log("Dealer: Player");}
+				else{Debug.Log("Dealer: Enemy " + (m_Betting.DealingPlayer.Index - 1));}
+				
+				if(m_Betting.SmallBindPlayer.Index == 1){Debug.Log("SmallBind: Player");}
+				else{Debug.Log("SmallBind: Enemy " + (m_Betting.SmallBindPlayer.Index - 1));}
+				
+				if(m_Betting.LargeBindPlayer.Index == 1){Debug.Log("LargeBind: Player");}
+				else{Debug.Log("LargeBind: Enemy " + (m_Betting.LargeBindPlayer.Index - 1));}
+				
+				if(m_PlayerTurn == 0){Debug.Log("First turn: Player");}
+				else{Debug.Log("First turn: Enemy " + (m_PlayerTurn));}
+			}
+			else if(m_Phase == TurnPhase.Betting)
+			{
+				Table.PoolCallRequirement = Table.GetHighestBet();
+				
+				if(!IsBettingCompleted())
+				{
+					Player CurrentPlayer = Players[m_PlayerTurn];
+					
+					if(CurrentPlayer.Human)
+					{
+						//if(m_Players[m_PlayerTurn].OnTheBet < Table.PoolCallRequirement){m_RaiseSlider.minValue = Table.PoolCallRequirement - m_Players[m_PlayerTurn].OnTheBet;}
+						m_RaiseSlider.maxValue = m_Players[m_PlayerTurn].Money;
+						m_Players[m_PlayerTurn].RaiseValue = (int) m_RaiseSlider.value;
+						
+						if(!Players[m_PlayerTurn].Fold)
+						{
+							//Update the interface to reflect the choices player have
+							if(m_RaiseSlider.value > 0)
+							{
+								m_PlayerLeftButton.GetComponentInChildren<Text>().text = "Raise"; 
+								Players[m_PlayerTurn].OnThePool.text = Players[m_PlayerTurn].OnThePool.text.Remove(1) + (Players[m_PlayerTurn].OnTheBet + Players[m_PlayerTurn].RaiseValue).ToString();
+							}
+							else if(Players[m_PlayerTurn].OnTheBet == Table.PoolCallRequirement){m_PlayerLeftButton.GetComponentInChildren<Text>().text = "Check";}
+							else if(Players[m_PlayerTurn].OnTheBet != Table.PoolCallRequirement){m_PlayerLeftButton.GetComponentInChildren<Text>().text = "Call";}
+							
+							if(!m_Control.LeftButtonPressed && !m_Control.RightButtonPressed && !m_Control.AllInPressed){return;}
+							
+							//check for any player input that show the choice player made, update the player decision accordingly
+							if(m_Control.LeftButtonPressed && m_RaiseSlider.value > 0){Debug.Log("Player " + CurrentPlayer.Index + ": Raise $" + m_RaiseSlider.value); Players[m_PlayerTurn].BettingAction = BettingDecision.Raise; m_Control.LeftButtonPressed = false;}
+							else if(m_Control.LeftButtonPressed && Players[m_PlayerTurn].OnTheBet == Table.PoolCallRequirement){Debug.Log("Player " + CurrentPlayer.Index + ": Check"); Players[m_PlayerTurn].BettingAction = BettingDecision.Check; m_Control.LeftButtonPressed = false;}
+							else if(m_Control.LeftButtonPressed && Players[m_PlayerTurn].OnTheBet != Table.PoolCallRequirement){Debug.Log("Player " + CurrentPlayer.Index + ":Call"); Players[m_PlayerTurn].BettingAction = BettingDecision.Call; m_Control.LeftButtonPressed = false;}
+							if(m_Control.RightButtonPressed){Players[m_PlayerTurn].BettingAction = BettingDecision.Fold; m_Control.RightButtonPressed = false;}
+							if(m_Control.AllInPressed){Debug.Log ("All In: " + Players[m_PlayerTurn].OnTheBet + " , " + Players[m_PlayerTurn].Money); Players[m_PlayerTurn].RaiseValue = (int) m_RaiseSlider.maxValue; Players[m_PlayerTurn].BettingAction = BettingDecision.Raise; m_Control.AllInPressed = false; m_Control.AllInButton.interactable = false;}
+							
+							if(Players[m_PlayerTurn].BettingAction == BettingDecision.NULL){return;}
+							
+							//perform that choice
+							Players[m_PlayerTurn].ProcessPlayerBettingAction(Players[m_PlayerTurn].BettingAction);
+						}
+						
+						PassToNextPlayer();
+					}
+					else
+					{
+						if(!Players[m_PlayerTurn].Fold)
+						{
+							//Decide whether to fold, check, call or raise
+							Players[m_PlayerTurn].BettingAction = Players[m_PlayerTurn].DecideEnemyBetting();
+							Debug.Log("Enemy " + (CurrentPlayer.Index - 1) + ": " + Players[m_PlayerTurn].BettingAction); 
+							
+							
+							//perform that action
+							Players[m_PlayerTurn].ProcessPlayerBettingAction(Players[m_PlayerTurn].BettingAction);
+							//Debug.Log("Enemy " + (CurrentPlayer.Index - 1) + " tobebet: " + Players[m_PlayerTurn].OnTheBet);
+							//Debug.Log("Enemy: " + Players[m_PlayerTurn].Fold + " , " + Players[m_PlayerTurn].Checked);
+						}
+						
+						PassToNextPlayer();
+					}
+				}
+				else {m_Phase = TurnPhase.Auctioning; m_AuctionPhase = AuctionPhase.Initial;}
+			}
+			else if(m_Phase == TurnPhase.Auctioning && m_AuctionPhase != AuctionPhase.NULL)
+			{
+				if(m_AuctionPhase == AuctionPhase.Initial)
+				{
+					mb_Auctioning = true;
+					AnnouncementText.enabled = false;
+					
+					for(int i = 0; i < Players.Length; i++)
+					{
+						Players[i].RaiseValue = 0;
+						Players[i].PurchaseValue = 0;
+					}
+					
+					m_PlayerLeftButton.GetComponentInChildren<Text>().text = "Confirm";
+					m_PlayerRightButton.GetComponentInChildren<Text>().text = "Forfeit";
+					m_PlayerAllInButton.GetComponent<Button>().enabled = false;
+
+					PassToNextPlayer();
+					m_AuctionRound = 0;
+					
+					m_AuctionPhase = AuctionPhase.First;
+				}
+				else if(m_AuctionPhase == AuctionPhase.First || m_AuctionPhase == AuctionPhase.Second)
+				{
+					if(Table.Pool.Count <= 0){m_Auction.DealAuctionCards(m_AuctionPhase);}
+					
+					//Debug.Log("Pricecheck: " + Auction.PriceCheck);
+					
+					if(!HasAuctionForCardEnd())
+					{
+						//Debug.Log("Auctioning in phase " + m_AuctionPhase);
+						if(Players[m_PlayerTurn].CompletedAuction){PassToNextPlayer();}
+					
+						if(Players[m_PlayerTurn].Human && !Players[m_PlayerTurn].Forfeit)
+						{
+							//Debug.Log("auction round: " + m_AuctionRound + " amount of non busted players: " + GetNonBustedPlayerAmount());
+							if(Players[m_PlayerTurn].SelectedCardForAuction == null)
+							{
+								mb_Selecting = true;
+								m_RaiseSlider.gameObject.SetActive(false);
+								//Debug.Log("RaiseSlider value: " + m_RaiseSlider.value);
+								//Debug.Log("Waiting for player to select card");
+								if(m_Control.LeftButtonPressed && Table.SelectedCardPoolSlot != null && Table.SelectedCard != null)
+								{
+									Debug.Log("Player: Selected " + Table.SelectedCard.Suit + " " + Table.SelectedCard.Value); 
+									Players[m_PlayerTurn].SelectedCardForAuction = Table.SelectedCard;
+									SetCardBeingBet(Players[m_PlayerTurn].SelectedCardForAuction,true);
+									m_Control.LeftButtonPressed = false;
+									m_PlayerLeftButton.GetComponentInChildren<Text>().text = "Bet";
+									m_RaiseSlider.value = 0;
+									PassToNextPlayer();
+									m_AuctionRound++;
+									//Debug.Log("RaiseSlider value: " + m_RaiseSlider.value);
+								}
+								else if(m_Control.LeftButtonPressed && (Table.SelectedCard == null || Table.SelectedCardPoolSlot == null)){m_Control.LeftButtonPressed = false; return;}
+								else if(m_Control.RightButtonPressed)
+								{
+									Players[m_PlayerTurn].AuctionAction = AuctionDecision.Forfeit; 
+									m_Control.RightButtonPressed = false; 
+									Players[m_PlayerTurn].ProcessPlayerAuctionAction(Players[m_PlayerTurn].AuctionAction);
+									PassToNextPlayer();
+									m_AuctionRound++;
+								}
+							}
+							else
+							{
+								//Debug.Log("Current highest bet: " + Table.GetHighestCompetitorBet(Players[m_PlayerTurn].SelectedCardForAuction));
+								mb_Selecting = false;
+								m_RaiseSlider.gameObject.SetActive(true);
+								if(Players[m_PlayerTurn].PurchaseValue < Table.GetHighestCompetitorBet(Players[m_PlayerTurn].SelectedCardForAuction))
+								{
+									m_RaiseSlider.minValue = Table.GetHighestCompetitorBet(Players[m_PlayerTurn].SelectedCardForAuction) - Players[m_PlayerTurn].PurchaseValue + 1; 
+									//m_RaiseSlider.value = m_RaiseSlider.minValue; 
+								}
+								else{m_RaiseSlider.minValue = 0;}
+								if(!Auction.PriceCheck){m_RaiseSlider.value = m_RaiseSlider.minValue; Auction.PriceCheck = true;}
+								m_RaiseSlider.maxValue = m_Players[m_PlayerTurn].Money;
+								m_Players[m_PlayerTurn].RaiseValue = (int) m_RaiseSlider.value;
+								
+								if(m_RaiseSlider.value > (Table.GetHighestCompetitorBet(Players[m_PlayerTurn].SelectedCardForAuction) - Players[m_PlayerTurn].PurchaseValue)){Players[m_PlayerTurn].OnThePool.text = Players[m_PlayerTurn].OnThePool.text.Remove(1) + (Players[m_PlayerTurn].OnTheBet + Players[m_PlayerTurn].RaiseValue).ToString();}
+								if(!m_Control.LeftButtonPressed && !m_Control.RightButtonPressed){return;} 
+							
+								//Check for player input to continue betting for the auction card or forfeit
+								if(m_Control.LeftButtonPressed && Players[m_PlayerTurn].RaiseValue > 0){Players[m_PlayerTurn].AuctionAction = AuctionDecision.Raise; m_Control.LeftButtonPressed = false;}
+								else if(m_Control.LeftButtonPressed && Players[m_PlayerTurn].RaiseValue <= 0){ m_Control.LeftButtonPressed = false; return;}
+								else if(m_Control.RightButtonPressed){Debug.Log("Player Forfeited the auction"); Players[m_PlayerTurn].AuctionAction = AuctionDecision.Forfeit; m_Control.RightButtonPressed = false;}
+								
+								if(Players[m_PlayerTurn].AuctionAction == AuctionDecision.NULL){return;}
+								
+								//Process the player input into actions
+								//m_RaiseSlider.value = m_RaiseSlider.minValue;
+								Players[m_PlayerTurn].ProcessPlayerAuctionAction(Players[m_PlayerTurn].AuctionAction);
+								//Debug.Log("RaiseSlider value: " + m_RaiseSlider.value);
+								PassToNextPlayer();
+								m_AuctionRound++;
+							}
+						}
+						else if(!Players[m_PlayerTurn].Human && !Players[m_PlayerTurn].Forfeit)
+						{
+							if(Players[m_PlayerTurn].SelectedCardForAuction == null)
+							{
+								//choose a card to auction for
+								Players[m_PlayerTurn].SelectedCardForAuction = Players[m_PlayerTurn].DecideEnemyAuctionTarget();
+								SetCardBeingBet(Players[m_PlayerTurn].SelectedCardForAuction,true);
+								
+								Debug.Log("Enemy" + m_PlayerTurn + ": Selected " + Players[m_PlayerTurn].SelectedCardForAuction.Suit + " " + Players[m_PlayerTurn].SelectedCardForAuction.Value);
+								
+								PassToNextPlayer();
+								m_AuctionRound++;
+							}
+							else
+							{
+								//determine the type of action an enemy should take
+								Players[m_PlayerTurn].AuctionAction = Players[m_PlayerTurn].DecideEnemyAuctioning();
+								
+								Debug.Log("Enemy" + m_PlayerTurn + ": " + Players[m_PlayerTurn].AuctionAction);
+								
+								// process that action
+								Players[m_PlayerTurn].ProcessPlayerAuctionAction(Players[m_PlayerTurn].AuctionAction);
+
+								PassToNextPlayer();
+								m_AuctionRound++;
+							}
+						}
+						
+						if(!Players[m_PlayerTurn].Human){Auction.PriceCheck = false;}
+						
+						//if the auction phase just ended prelimary round, cover any card that are not being auctioned
+						if(m_AuctionRound == GetNonBustedPlayerAmount()){Auction.CoverNonBettedAuctionCards(); Auction.EnableCardPrices();}
+						//if the auction phase has past prelimary round,Check if any card that are being auctioned only have one player auctioning for it, if there is, the one player wins that card -> add that card to the player's pocket
+						if(m_AuctionRound > GetNonBustedPlayerAmount())
+						{
+							Auction.UpdateCardPrices();
+							
+							for(int i = 0; i < Table.Pool.Count; i++)
+							{
+								if(Table.Pool[i].BeingBet)
+								{
+									int EligiblePlayers = 0;
+									int EligiblePlayerIndex = 0;
+									for(int j = 0; j < Players.Length; j++)
+									{
+										if(Players[j].SelectedCardForAuction != null && !Players[j].Busted && !Players[j].Fold && !Players[j].Forfeit && Players[j].SelectedCardForAuction.Suit == Table.Pool[i].Suit && Players[j].SelectedCardForAuction.Value == Table.Pool[i].Value)
+										{EligiblePlayers++; EligiblePlayerIndex = j;}
+									}
+									
+									if(EligiblePlayers == 1  && Players[EligiblePlayerIndex].Raised)
+									{ 
+										Table.Pool[i].BeingBet = false;
+										Players[EligiblePlayerIndex].AddCardToPocket(Table.Pool[i]);
+										Players[EligiblePlayerIndex].CompletedAuction = true;
+										
+										if(EligiblePlayerIndex == 0){Debug.Log("Player added " + Table.Pool[i].Suit + " " + Table.Pool[i].Value + " to his pocket");}
+										else{Debug.Log("Enemy " + (EligiblePlayerIndex) + " added " + Table.Pool[i].Suit + " " + Table.Pool[i].Value + " to his pocket");}
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						Table.ResetPoolSlotSize();
+						Table.CleanCardPoolCards();
+						Table.Pool.Clear();
+						Table.SelectedCard = null;
+						Table.SelectedCardPoolSlot = null;
+						Auction.DisableCardPrices();
+						Auction.ResetCardPrices();
+						m_RaiseSlider.value = 0;
+						//Debug.Log("RaiseSlider value: " + m_RaiseSlider.value);
+						if(Players[0].Forfeit){Players[0].RefreshPlayerHand();}
+						for(int i = 0; i < Players.Length; i++)
+						{
+							//if(Players[i].Forfeit){Debug.Log("pool call requirement:" + Table.PoolCallRequirement); Players[i].Money += Players[i].OnTheBet - Table.PoolCallRequirement ;}
+							
+							Players[i].AuctionAction = AuctionDecision.NULL;
+							Players[i].SelectedCardForAuction = null;
+							Players[i].Forfeit = false;
+							Players[i].ForfeitText.enabled = false;
+							Players[i].RaiseValue = 0;
+							Players[i].PurchaseValue = 0;
+							Players[i].Raised = false;
+							Players[i].SelectedCard = null;
+							Players[i].SelectedCardSlot = null;
+							Players[i].CompletedAuction = false;
+						}
+						m_AuctionRound = 0;			
+						PassToNextPlayer();
+						if(m_AuctionPhase == AuctionPhase.First)
+						{
+							m_AuctionPhase = AuctionPhase.Second; 
+							m_PlayerLeftButton.GetComponentInChildren<Text>().text = "Confirm";
+							m_PlayerRightButton.GetComponentInChildren<Text>().text = "Forfeit";
+							m_PlayerAllInButton.GetComponent<Button>().enabled = false;
+							Debug.Log("Enter auction phase 2");
+						}
+						else if(m_AuctionPhase == AuctionPhase.Second)
+						{ 
+							m_AuctionPhase = AuctionPhase.Third;
+							m_PlayerLeftButton.GetComponentInChildren<Text>().text = "Purchase";
+							m_PlayerRightButton.GetComponentInChildren<Text>().text = "Pass";
+							mb_Selecting = true;
+							Debug.Log("Enter auction phase 3");
+						}
+					}
+				}
+				else if(m_AuctionPhase == AuctionPhase.Third)
+				{
+					//if(Players[m_PlayerTurn].FinishPurchasing){PassToNextPlayer(); m_AuctionRound++; return;}
+					if(AnnouncementText.enabled == false){AnnouncementText.enabled = true; AnnouncementText.text = "Purchase one random card for only $" + Auction.CostOfRandomCard.ToString() + " !";}
+				
+					if(Players[m_PlayerTurn].Human)
+					{
+						if(m_Control.LeftButtonPressed && Players[m_PlayerTurn].Money > Auction.CostOfRandomCard)
+						{
+							Players[m_PlayerTurn].Money -= Auction.CostOfRandomCard;
+							Players[m_PlayerTurn].OnTheBet += Auction.CostOfRandomCard;
+							Dealer.AddCardToPlayerPocket(Players[m_PlayerTurn]);
+							m_Control.LeftButtonPressed = false;
+							Players[m_PlayerTurn].FinishPurchasing = true;
+							//Players[m_PlayerTurn].CompletedAuction = true;
+							PassToNextPlayer();
+							m_AuctionRound++;
+							Debug.Log("Player purchase a card and add to his/her pocket !");
+						}
+						else if(m_Control.RightButtonPressed){Debug.Log("Player skip the purchase of random card !"); m_Control.RightButtonPressed = false; Players[m_PlayerTurn].FinishPurchasing = true; PassToNextPlayer(); m_AuctionRound++;}// Players[m_PlayerTurn].CompletedAuction = true;}
+					}
+					else
+					{
+						if(Players[m_PlayerTurn].DecideEnemyPurchase())
+						{
+							Players[m_PlayerTurn].Money -= Auction.CostOfRandomCard;
+							Players[m_PlayerTurn].OnTheBet += Auction.CostOfRandomCard;
+							Dealer.AddCardToPlayerPocket(Players[m_PlayerTurn]);
+							Players[m_PlayerTurn].FinishPurchasing = true;
+							//Players[m_PlayerTurn].CompletedAuction = true;
+							PassToNextPlayer();
+							m_AuctionRound++;
+							Debug.Log("Enemy" + m_PlayerTurn + " purchase a card and add to his/her pocket!");
+						}
+						else{Debug.Log("Enemy" + m_PlayerTurn + " skip the purchasing of a pocket card"); Players[m_PlayerTurn].FinishPurchasing = true; PassToNextPlayer(); m_AuctionRound++;} //Players[m_PlayerTurn].CompletedAuction = true;}
+					}
+					
+					if(Auction.HasPlayersDoneWithPurchasing()){AnnouncementText.enabled = false; AnnouncementText.text = ""; m_AuctionPhase = AuctionPhase.End;}
+				}
+				else if(m_AuctionPhase == AuctionPhase.End)
+				{
+					PassToNextPlayer();
+					m_RaiseSlider.enabled = false;
+					//Debug.Log("RaiseSlider value: " + m_RaiseSlider.value);
+					m_PlayerAllInButton.GetComponent<Button>().enabled = false;
+					m_PlayerLeftButton.GetComponentInChildren<Text>().text = "Confirm";
+					m_PlayerRightButton.GetComponentInChildren<Text>().text = "Revert";
+					Table.SelectedCard = null;
+					Table.SelectedCardPoolSlot = null;
+					m_AuctionRound = 0;
+					for(int i = 0; i < Players.Length; i++){Players[i].FinishPurchasing = false; Players[i].SelectedCard = null; Players[i].SelectedCardSlot = null;}
+					m_Phase = TurnPhase.Swapping;
+				}
+			}
+			else if(m_Phase == TurnPhase.Swapping)
+			{
+				if(Players[m_PlayerTurn].Human)
+				{
+					//Debug.Log("Player turn to swap: " + m_Control.LeftButtonPressed + " " + m_Control.RightButtonPressed);
+					if(Table.Pool.Count <= 0)
+					{
+						for(int i = 0; i < Players[m_PlayerTurn].Pocket.Count; i++){Table.Pool.Add(Players[m_PlayerTurn].Pocket[i]);} 
+						Table.RefreshPoolForSwapping(); 
+						Players[m_PlayerTurn].StoreCurrentHand();
+					}
+					
+					if(m_Control.LeftButtonPressed){Debug.Log("Swap button pressed"); Table.CleanCardPoolCards(); PassToNextPlayer(); m_AuctionRound++; m_Control.LeftButtonPressed = false;}
+					else if(m_Control.RightButtonPressed){Debug.Log("Cancel button pressed"); Table.CleanCardPoolCards(); Players[m_PlayerTurn].ReturnToPreviousHand(); PassToNextPlayer(); m_AuctionRound++; m_Control.RightButtonPressed = false;}
+				}
+				else
+				{
+					//Debug.Log("Enemy turn to swap");
+					Players[m_PlayerTurn].PerformEnemyHandSwapping();
+					PassToNextPlayer();
+					m_AuctionRound++;
+				}
+			
+				if(m_AuctionRound > GetNonBustedPlayerAmount()){for(int i = 0; i < Players.Length; i++){Players[i].CleanPocket();} m_Phase = TurnPhase.Showdown;}
+			}
+			else if(m_Phase == TurnPhase.Showdown)
+			{
+				if(mb_ShowdownStarted == false){StartCoroutine(ShowdownCorountine());}
+			}
+			else if(m_Phase == TurnPhase.End)
+			{
+				if(HasGameEnded())
+				{
+					mb_GameOngoing = false;
+				}
+				else
+				{
+					for(int i = 0; i < Players.Length; i++)
+					{
+						Players[i].OnTheBet = 0;
+						Players[i].RaiseValue = 0;
+						Players[i].UpdateFinancialStatus();
+						Players[i].BettingAction = BettingDecision.NULL;
+						Players[i].Called = false;
+						Players[i].Checked = false;
+						Players[i].Fold = false;
+						Players[i].FoldText.enabled = false;
+						Players[i].GetSidePotOnly = false;
+					}
+					
+					m_Betting.ShiftDealerAndBinds();
+					Table.CleanCardPoolCards();
+					
+					m_Phase = TurnPhase.Initial;
+				}
+			}
+		}
+		else
+		{
+			Player Winner = GetOverallWinner();
+			AnnouncementText.enabled = true;
+			if(Winner.Index == 1){AnnouncementText.text = "Player Wins !";}
+			else{AnnouncementText.text = "Enemy " + (Winner.Index - 1) + " Wins !";}
+		}
+	}
+	
+	public Player Showdown()
+	{
+		Debug.Log("showdown");
+	
+		for(int i = 1; i < m_Players.Length; i++){if(!m_Players[i].Fold && !m_Players[i].Busted){m_Players[i].ShowHand();}}
+		
+		Player Winner = Evaluator.EvaluateHandWinner(Players[0],Evaluator.EvaluateHandWinner(Players[1],Evaluator.EvaluateHandWinner(Players[2],Players[3])));
+		
+		return Winner;
+	}
+	
+	public void PrintAllPlayersHand()
+	{
+		for(int i = 0; i < Players.Length; i++){Debug.Log("Player " + (i+1) + ": "); Players[i].PrintHand();}
+		Debug.Log("Player 1's handtype : " + Evaluator.EvaluateHand(Players[0].Hand));
+		Debug.Log("Player 2's handtype : " + Evaluator.EvaluateHand(Players[1].Hand));
+		Debug.Log("Player 3's handtype : " + Evaluator.EvaluateHand(Players[2].Hand));
+		Debug.Log("Player 4's handtype : " + Evaluator.EvaluateHand(Players[3].Hand));
+		Debug.Log("Winning player: " + "PLAYER " + Evaluator.EvaluateHandWinner(Players[0],Evaluator.EvaluateHandWinner(Players[1],Evaluator.EvaluateHandWinner(Players[2],Players[3]))).Index);
+	}
+	
+	public bool IsBettingCompleted()
+	{
+		for(int i = 0; i < m_Players.Length; i++)
+		{
+			if(!m_Players[i].Busted &&  !m_Players[i].Fold && !m_Players[i].Checked) {return false;}
+			//if(!m_Players[i].Checked && !m_Players[i].Called && !m_Players[i].Fold && m_Players[i].OnTheBet != Table.GetHighestBet()){return false;} 
+		}
+		return true;
+	}
+
+	private IEnumerator ShowdownCorountine()
+	{
+		mb_ShowdownStarted = true;
+		
+		DisableHandTypeCounter();
+	
+		Table.CleanCardPoolCards();
+		
+		Player winner = Showdown();
+		
+		yield return new WaitForSeconds(1.0f);
+		
+		m_TurnPointer.localPosition = m_PointerPositions[winner.Index - 1];
+		m_TurnPointer.eulerAngles = m_PointerRotations[winner.Index - 1];
+		
+		AnnouncementText.enabled = true;
+		if(winner.Index == 1){AnnouncementText.text = "Player win !";}
+		else{AnnouncementText.text = "Enemy " + (winner.Index - 1) + " win !";}
+		
+		CheckForPlayerThatGetSidePot();
+		
+		if(Players[winner.Index-1].GetSidePotOnly)
+		{
+			Debug.Log("Side-pot were granted");
+			
+			for(int i = 0; i < Players.Length; i++)
+			{
+				if(i != winner.Index - 1 && Players[i].OnTheBet > Players[winner.Index-1].OnTheBet)
+				{
+					int LeftOver = Players[i].OnTheBet - Players[winner.Index-1].OnTheBet;
+					Players[i].Money += LeftOver;
+					Table.PoolMoney -= LeftOver;
+					Debug.Log("Sidepot: Player " + Players[i].Index + " Money gained: " + LeftOver);
+					Debug.Log("Table remaining money: " + Table.PoolMoney);
+				}
+			}
+			
+			Debug.Log("Winner: Player " + winner.Index + " Money gained: " + Table.PoolMoney);
+			Debug.Log("Winner pre-win money: " + Players[winner.Index-1].Money);
+			Players[winner.Index - 1].Money += Table.PoolMoney;
+			Table.PoolMoney = 0;
+			//THE WINNING PLAYER SHOULD GET ITS OWN BET FROM EACH OF THE PLAYER ONCE ?
+			Debug.Log("Winner post-win money: " + Players[winner.Index-1].Money);
+		}
+		else
+		{
+			Debug.Log("No side-pot was granted");
+			Debug.Log("Winner: Player " + winner.Index + " Money gained: " + Table.PoolMoney);
+			Players[winner.Index - 1].Money += Table.PoolMoney;
+			Table.PoolMoney = 0;
+		}
+		
+		yield return new WaitForSeconds(0.5f);
+		
+		for(int i = 0; i < Players.Length; i++)
+		{
+			if(Players[i].Money <= 0 && !Players[i].Busted)
+			{
+				m_TurnPointer.localPosition = m_PointerPositions[Players[i].Index - 1];
+				m_TurnPointer.eulerAngles = m_PointerRotations[Players[i].Index - 1];
+				
+				if(Players[i].Index == 1){AnnouncementText.text = "Player Busted !";}
+				else{AnnouncementText.text = "Enemy " + (Players[i].Index - 1) + " Busted !";}
+			
+				yield return new WaitForSeconds(0.5f);
+				
+				Players[i].Busted = true;
+				Players[i].ClearCardslotsSprite();
+				Players[i].BustedText.enabled = true;
+			}
+		}
+	
+		AnnouncementText.text = " ";
+		AnnouncementText.enabled = true;
+		
+		mb_ShowdownStarted = false;
+		m_Phase = TurnPhase.End;
+	}
+	
+	private void PassToNextPlayer()
+	{
+		Debug.Log("Passing to next player !");
+		if(HasAuctionForCardEnd()){return;}
+	
+		if(m_PlayerTurn < 3){m_PlayerTurn++;}
+		else{m_PlayerTurn = 0;}
+		
+		RefreshPointer();
+		
+		if(Players[m_PlayerTurn].Busted || Players[m_PlayerTurn].Fold || Players[m_PlayerTurn].Forfeit || Players[m_PlayerTurn].CompletedAuction){PassToNextPlayer(); Debug.Log("Pass Player" + m_PlayerTurn + " turn"); }
+		Debug.Log("Passing of turn done ! Current Player: " + Players[m_PlayerTurn].Index);
+	}
+	
+	private void RefreshPointer()
+	{
+		m_TurnPointer.localPosition = m_PointerPositions[m_PlayerTurn];
+		m_TurnPointer.eulerAngles = m_PointerRotations[m_PlayerTurn];
+	}
+	
+	private bool HasGameEnded()
+	{
+		int Busted = 0;
+		for(int i = 0; i < Players.Length; i++)
+		{
+			if(Players[i].Busted){Busted++;}
+		}
+		
+		return Busted >= 3 ? true : false;
+	}
+	
+	private Player GetAuctionWinner()
+	{
+		for(int i = 0; i < Players.Length; i++)
+		{
+			if(!Players[i].Busted && !Players[i].Forfeit){return Players[i];}
+		}
+		return Players[0];
+	}
+	
+	private Player GetOverallWinner()
+	{
+		for(int i = 0; i < Players.Length; i++)
+		{
+			if(!Players[i].Busted){return Players[i];}
+		}
+		return Players[0];
+	}
+	
+	private void UpdateHandTypeCounter()
+	{
+		HandTypeText.text = Evaluator.EvaluateHand(Players[0].Hand).ToString();
+	}
+	
+	private void DisableHandTypeCounter()
+	{
+		HandTypeText.text = " ";
+	}
+	
+	public float GetCurrentPlayerBet()
+	{
+		return m_Players[m_PlayerTurn].RaiseValue;
+	}
+	
+	public int GetNonBustedPlayerAmount()
+	{
+		int amount = 0;
+		for(int i = 0; i < Players.Length; i++){if(!Players[i].Busted && !Players[i].Fold && !Players[i].Forfeit){amount++;}}
+		return amount;
+	}
+	
+	public bool HasAuctionForCardEnd()
+	{
+		for(int i = 0; i < Players.Length; i++)
+		{
+			if(Players[i].SelectedCardForAuction == null && !Players[i].Busted && !Players[i].Forfeit && !Players[i].Fold){Debug.Log("Player " + i + " has not selected an auction card nor forfeit"); return false;}//Debug.Log("Player " + i + " has not selected an auction card nor forfeit"); }
+		}
+	
+		for(int i = 0; i < Table.Pool.Count; i++)
+		{
+			if(Table.Pool[i].BeingBet == true){Debug.Log("There are cards that are still being auctioned"); return false;}//Debug.Log("There are cards that are still being auctioned");}
+		}
+		
+		Debug.Log("Auction phase has ended !");
+		return true;
+	}
+	
+	private void SetCardBeingBet(Card _card, bool _trueornot)
+	{
+		for(int i = 0; i < Table.Pool.Count; i++)
+		{
+			if(Table.Pool[i].Suit == _card.Suit && Table.Pool[i].Value == _card.Value)
+			{
+				Table.Pool[i].BeingBet = _trueornot;
+				return;
+			}
+		}
+	}
+	
+	private void CheckForPlayerThatGetSidePot()
+	{
+		int HighestBetOnBoard = Table.GetHighestBet();
+		Debug.Log("Highest bet on board by Player " + (GetPlayerThroughBet(HighestBetOnBoard).Index) + ": " + Table.GetHighestBet());
+		for(int i = 0; i < Players.Length; i++)
+		{
+			if(!Players[i].Busted && !Players[i].Fold && Players[i].OnTheBet < HighestBetOnBoard) 
+			{
+				Debug.Log("Player " + Players[i].Index + " side-betting ! Their original bet: " + Players[i].OnTheBet);
+				Players[i].GetSidePotOnly = true;
+			}
+		}
+	}
+	
+	private Player GetPlayerThroughBet(int _Betting)
+	{
+		for(int i = 0; i < Players.Length; i++)
+		{
+			if(Players[i].OnTheBet == _Betting){return Players[i]; break;}
+		}
+		return Players[0];
+	}
+}

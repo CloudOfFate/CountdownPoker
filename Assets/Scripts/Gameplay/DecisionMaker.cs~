@@ -1,0 +1,66 @@
+﻿using UnityEngine;
+using System.Collections;
+using System.IO;
+
+public class DecisionReference
+{
+	private HandValue[] HandValuesReference;
+	private Calling[] CallingsReference;
+	private Raising[] RaisingsReference;
+	private Bidding[] BiddingsReference;
+	private Purchasing[] PurchasingReference;
+	
+	public DecisionReference()
+	{
+		HandValuesReference = HandValuesDatabase.Load(Path.Combine(Application.dataPath, "Resources/XMLFiles/HandValuesXML.xml")).HandValues.ToArray();
+		CallingsReference = CallingDatabase.Load(Path.Combine(Application.dataPath, "Resources/XMLFiles/WorthCallingXML.xml")).Callings.ToArray();
+		RaisingsReference = RaisingDatabase.Load(Path.Combine(Application.dataPath, "Resources/XMLFiles/WorthRaisingXML.xml")).Raisings.ToArray();
+		BiddingsReference = BiddingDatabase.Load(Path.Combine(Application.dataPath, "Resources/XMLFiles/WorthBiddingXML.xml")).Biddings.ToArray();
+		PurchasingReference = PurchasingDatabase.Load(Path.Combine(Application.dataPath, "Resources/XMLFiles/WorthPurchasingXML.xml")).Purchasings.ToArray();
+	}
+	
+	public void PrintHandValueReference()
+	{
+		Debug.Log("///////////////HAND VALUE REFERENCE///////////////////");
+		for(int i = 0; i < HandValuesReference.Length; i++)
+		{
+			Debug.Log("Hand Type: " + HandValuesReference[i].HandType + " Tier1: " + HandValuesReference[i].Tier1 + " Tier2: " + HandValuesReference[i].Tier2 + " Tier3: " + HandValuesReference[i].Tier3 + " Tier4: " + HandValuesReference[i].Tier4);
+		}
+	}
+	
+	public void PrintCallingsReference()
+	{
+		Debug.Log("///////////////CALLINGS REFERENCE///////////////////");
+		for(int i = 0; i < CallingsReference.Length; i++)
+		{
+			Debug.Log("Aggressiveness: " + CallingsReference[i].Aggressiveness + " Desirability: " + CallingsReference[i].Desirability + " HandValue: " + CallingsReference[i].HandValues + " MoneyInPot: " + CallingsReference[i].MoneyInPot + " MoneyRequiredToCall: " + CallingsReference[i].MoneyRequiredToCall);
+		}
+	}
+	
+	public void PrintRaisingsReference()
+	{
+		Debug.Log("///////////////RAISINGS REFERENCE///////////////////");
+		for(int i = 0; i < RaisingsReference.Length; i++)
+		{
+			Debug.Log("Aggressiveness: " + RaisingsReference[i].Aggressiveness + " Desirability: " + RaisingsReference[i].Desirability + " HandValue: " + RaisingsReference[i].HandValue. + " MoneyInPot: " + RaisingsReference[i].MoneyInPot + " PlayerMoney: " + RaisingsReference[i].PlayerMoney);
+		}
+	}
+	
+	public void PrintBiddingsReference()
+	{
+		Debug.Log("///////////////BIDDINGS REFERENCE///////////////////");
+		for(int i = 0; i < BiddingsReference.Length; i++)
+		{
+			Debug.Log("Aggressiveness: " + BiddingsReference[i].Aggressiveness + " Desirability: " + BiddingsReference[i].Desirability + " Earning: " + BiddingsReference[i].Earning + " ProjectedHandValue: " + BiddingsReference[i].ProjectedHandValue + " PlayerMoney: " + BiddingsReference[i].PlayerMoney);
+		}
+	}
+	
+	public void PrintPurchasingReference()
+	{
+		Debug.Log("///////////////PURCHASING REFERENCE///////////////////");
+		for(int i = 0; i < PurchasingReference.Length; i++)
+		{
+			Debug.Log("Aggressiveness: " + PurchasingReference[i].Aggressiveness + " Desirability: " + PurchasingReference[i].Desirability + " Earning: " + PurchasingReference[i].Earning + " ProjectedHandValue: " + PurchasingReference[i].ProjectedHandValue + " PlayerMoney: " + PurchasingReference[i].PlayerMoney);
+		}
+	}
+}

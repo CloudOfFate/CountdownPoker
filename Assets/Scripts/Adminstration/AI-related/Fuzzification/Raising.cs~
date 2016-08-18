@@ -1,0 +1,8 @@
+﻿public class Raising 
+{
+	public AggressiveLevel Aggressiveness;
+	public TightnessLevel Tightness;
+	public TablePosition Position;
+	public HandLevel Hand;
+	public Desirability Desirability;
+}

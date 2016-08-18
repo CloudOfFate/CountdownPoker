@@ -1,0 +1,24 @@
+﻿using UnityEngine;
+using System.Collections;
+
+public class Enemy
+{
+	private Player m_Player;
+	
+	private int m_Aggressiveness;
+	private int m_Liability;
+	private int m_Predictability;
+	public int Aggressiveness{get{return m_Aggressiveness;} set{m_Aggressiveness = value;}}
+	public int Liability{get{return m_Liability;} set{m_Liability = value;}}
+	public int Predictability{get{return m_Predictability;} set{m_Predictability = value;}}
+
+	public Enemy(Player _player, int _aggressiveness, int _liability, int _predictability)
+	{
+		m_Player = _player;
+		m_Aggressiveness = _aggressiveness;
+		m_Liability = _liability;
+		m_Predictability = _predictability;
+	}
+	
+	
+}

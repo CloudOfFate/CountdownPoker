@@ -1,0 +1,596 @@
+﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class SemiBluffPlay : Play 
+{
+	private int[] TopTierHandLevel;
+	private List<CardCombo> CardComboToFormHands;
+	private List<CardCombo> ComboCanBePursued;
+	private CardCombo ComboToBePursued;
+	private float[] PriceLimitForBidding;
+
+	private CardCombo CurrentCombo;
+	private Card CurrentBiddingCard;
+
+	public struct CardCombo
+	{
+		public int Value;
+		public Card[] Combo;
+	}
+
+	public SemiBluffPlay(Enemy _Enemy) : base(_Enemy)
+	{
+		EnemyInstance = _Enemy;
+
+		TopTierHandLevel = new int[17];
+		PriceLimitForBidding = new float[2];
+
+		PriceLimitForBidding[0] = 0.0f;
+		PriceLimitForBidding[1] = 0.0f;
+
+		int StartingLevel = 22;
+
+		for(int LevelIndex = 0; LevelIndex < TopTierHandLevel.Length; LevelIndex++)
+		{
+			TopTierHandLevel[LevelIndex] = StartingLevel;
+			StartingLevel--;
+		}
+
+		CorrespondingAction = PlayerAction.SemiBluffing;
+	}
+
+	public override float ApplicabilityOfPlay ()
+	{
+		if(Evaluator.DetermineHandGrade(EnemyInstance.PlayerInstance) == HandGrade.Bad || Evaluator.DetermineHandGrade(EnemyInstance.PlayerInstance) == HandGrade.Average)
+			return 0.0f;
+
+		//THE HIGHER THE AGGRESSIVENESS OF THE PLAYER, THE WIDER THE TOP TIER HANDS RANGE WILL BE
+		//NOTE. CALCULATE THE LOWEST POSSIBLE HAND LEVEL THAT STILL QUALIFY AS TOP TIER HAND BASED ON HOW AGGRESSIVE PLAYER IS
+		int MinTopHandLevel = 6;
+
+		float ClampedAggressiveness = 0;
+		if(EnemyInstance.Aggressiveness == 5)
+			ClampedAggressiveness = 0;
+
+		else if(EnemyInstance.Aggressiveness < 5)
+			ClampedAggressiveness = (5.0f - (float) EnemyInstance.Aggressiveness)/5.0f * -1.0f;
+
+		else if(EnemyInstance.Aggressiveness > 5)
+			ClampedAggressiveness = ((float) EnemyInstance.Aggressiveness - 5.0f)/5.0f * 1.0f;
+
+		//THE TIGHTER THE PLAYER IS, THE TOP TIER HANDS RANGE WILL ALSO BE TIGHTER
+		//NOTE. BASED ON HOW LOOSE/TIGHT THE PLAYER IS , INCREASE/REDUCE THE LOWEST POSSIBLE HAND LEVEL
+		float ClampedTightness = 0;
+		if(EnemyInstance.Tightness == 5)
+			ClampedTightness = 0;
+
+		else if(EnemyInstance.Tightness < 5)
+			ClampedTightness = (5.0f - (float) EnemyInstance.Tightness)/5.0f * 1.0f;
+
+		else if(EnemyInstance.Tightness > 5)
+			ClampedTightness = ((float) EnemyInstance.Tightness - 5.0f)/5.0f * -1.0f;
+
+		MinTopHandLevel = 16 + (int) (ClampedAggressiveness * 3.0f) + (int) (ClampedTightness * 2.0f);
+
+		//BASED ON THE PLAYER HANDS, DERIVE THE DIFFERENT POSSIBLE HAND COMBINATION WITH THE REMAINING CARD IN THE DECK
+		LinkedList<Card[]> PossibleHands = Evaluator.DeterminePossibleHand(PlayerInstance,true,true);
+
+		if(PossibleHands.Count <= 0)
+			return 0.0f;
+
+		Utility.RemoveDuplicationFromHandList(PossibleHands);
+
+		//SORT THE HANDS COMBINATION TO TOP TIER HANDS AND LOWER TIER HANDS.
+		List<Card[]> TopTierHands = new List<Card[]>();
+		Card[] PlayerHand = PlayerInstance.Hand.ToArray();
+		LinkedListNode<Card[]> TraverseNode = PossibleHands.First;
+
+		for(int HandIndex = 0; HandIndex < PossibleHands.Count; HandIndex++)
+		{
+			if(Evaluator.DetermineHandLevelINT(TraverseNode.Value) >= MinTopHandLevel && 
+			   Evaluator.IsFirstHandSuperiorOverSecond(TraverseNode.Value,PlayerHand))
+				TopTierHands.Add(TraverseNode.Value);	
+
+			TraverseNode = TraverseNode.Next;
+		}
+
+		//BASED ON THE PROPORTION OF TOP TIER HANDS TO THE REST OF THE HANDS, DERIVE THE APPLICABILITY OF THE PLAY
+		float RatioRequirement = 0.35f + (ClampedAggressiveness * -0.15f) + (ClampedTightness * -0.1f);
+
+		if(TopTierHands.Count/PossibleHands.Count >= RatioRequirement)
+			return (50.0f + (TopTierHands.Count/PossibleHands.Count - RatioRequirement) * 100.0f);
+
+		return 0.0f;
+	}
+
+	public override void StartPlay ()
+	{
+		PlayInUse = true;
+		CurrentPhase = Phase.One;
+	}
+
+	public override BettingDecision ExecuteBetPlay ()
+	{
+		if(CurrentPhase == Phase.NULL)
+			return BettingDecision.NULL;
+
+		if(CurrentPhase == Phase.One)
+		{
+			//MAKE THE FIRST RAISE OF THE POT
+			//Since there is no player before this player raised, this player shall raise the pot to deter players off
+			TablePosition PlayerPosition = GMInstance.Betting.DeterminePlayerPosition(EnemyInstance.PlayerInstance);
+
+			if(PlayerPosition == TablePosition.UnderTheGun)
+				EnemyInstance.PlayerInstance.RaiseValue = 3 * GMInstance.Betting.BigBind;
+						
+			else if(PlayerPosition == TablePosition.OnTheButton)
+				EnemyInstance.PlayerInstance.RaiseValue = (int) (2.5f * GMInstance.Betting.BigBind);
+						
+			else if(PlayerPosition == TablePosition.SmallBind)
+				EnemyInstance.PlayerInstance.RaiseValue = (int) (Random.Range(3.5f,4.0f) *  GMInstance.Betting.BigBind);
+
+			else
+				EnemyInstance.PlayerInstance.RaiseValue = 4 * GMInstance.Betting.BigBind;
+						
+			EnemyInstance.PlayerInstance.RaiseValue = Mathf.Clamp(EnemyInstance.PlayerInstance.RaiseValue,0,EnemyInstance.PlayerInstance.Stack);
+
+			Debug.Log("Enemy " + (EnemyInstance.PlayerInstance.Index - 1) + " will be bluffing and raising $" + EnemyInstance.PlayerInstance.RaiseValue);
+
+			CurrentPhase = Phase.Two;
+
+			return BettingDecision.Raise;		
+		}
+		else if(CurrentPhase == Phase.Two)
+		{
+			//FURTHER RE-RAISE TO DETER THE REMAINING PLAYERS
+			//If player had already raised once or more in attempt, check whether a further re-raise (3 bet or 4 bet) will then deter other players
+			//NOTE. GO THROUGH THE RANGE FOR THE OTHER PLAYERS, CHECK FOR THE PROBABILITY OF THEM HAVING THE TOP TOP TIER HAND. THE HIGHER THE PROBABILITY, THE LOWER THE CHANCE THAT PLAYER WILL RE-RAISE
+			//NOTE. IF THERE IS MORE THAN ONE OTHER PLAYERS, THESE PROBABILITIES WILL BE ADDED TO GET AN AVERAGE PROBABILITY
+
+			int AmountOfOtherPlayers = 0;
+			float TotalProbability = 0.0f;
+			for(int PlayerIndex = 0; PlayerIndex < GMInstance.Players.Length; PlayerIndex++)
+			{
+				if(GMInstance.Players[PlayerIndex].Index != EnemyInstance.PlayerInstance.Index && !GMInstance.Players[PlayerIndex].Busted && !GMInstance.Players[PlayerIndex].Fold)
+				{	
+					AmountOfOtherPlayers++;
+					TotalProbability += Evaluator.FindPlayerProabilityofSpecificHandGrade(EnemyInstance.PlayerInstance,GMInstance.Players[PlayerIndex],HandGrade.Good);
+				}
+			}
+
+			float AverageTopHandProbability = TotalProbability / AmountOfOtherPlayers;
+			float ChanceOfReraise = 100.0f - AverageTopHandProbability;
+
+			//NOTE. FOR EVERY OTHER PLAYER THAT IS BEEN COVERED BY THIS PLAYER'S STACK, INCREASE THE CHANCE OF RE-RAISE AS WELL
+			int OverlappingDone = GMInstance.Table.GetAmountOfOverlappingPlayerDone(EnemyInstance.PlayerInstance);
+			ChanceOfReraise += 5.0f * OverlappingDone;
+
+			//NOTE. IF THE PLAYER IS ON THE BUTTON, INCREASE THE CHANCE OF RE-RAISE AS WELL
+			if(GMInstance.Betting.DeterminePlayerPosition(EnemyInstance.PlayerInstance) == TablePosition.OnTheButton)
+				ChanceOfReraise += 10.0f;
+
+			//NOTE. FOR EVERY SUB-SEQUENT RE-RAISE, REDUCE THE CHANCE OF RE-RAISE SIGNIFICANTLY 
+			if(CommonMemoryInstance.RaiseInBet >= 1)
+				ChanceOfReraise -= 10.0f * CommonMemoryInstance.RaiseInBet;
+
+			//if the chance of re-raise is good enough, re-raise once more
+			if(ChanceOfReraise > 50.0f)
+				return BettingDecision.Raise;
+
+			//Else, player will fold their hand to quickly back off from a high stake pot
+			return BettingDecision.Fold;
+		}
+
+		return BettingDecision.NULL;
+	}
+
+	public override AuctionDecision ExecuteAuctionPlay ()
+	{
+		if(CurrentPhase == Phase.NULL)
+			return AuctionDecision.NULL;
+
+		//MAIN IDEA OF AUCTION PHASE - DEPENDING ON THE GIVEN AUCTION CARD, PLAYER WILL FOLD OR PUSH HARDER WITH THEIR HAND TO GET THAT CARD
+		//DETERMINE WHAT CARD TO AIM FOR DURING THE AUCTION SECTION
+		if(CardComboToFormHands == null)
+		{
+			LinkedList<Card[]> PossibleHands = Evaluator.DeterminePossibleHand(PlayerInstance,true,true);
+			Utility.RemoveDuplicationFromHandList(PossibleHands);
+
+			Card[] PlayerHand = PlayerInstance.Hand.ToArray();
+			List<Card[]> SuperiorHands = new List<Card[]>();
+
+			int MinTopHandLevel = 6;
+
+			float ClampedAggressiveness = 0;
+			if(EnemyInstance.Aggressiveness == 5)
+				ClampedAggressiveness = 0;
+
+			else if(EnemyInstance.Aggressiveness < 5)
+				ClampedAggressiveness = (5.0f - (float) EnemyInstance.Aggressiveness)/5.0f * -1.0f;
+
+			else if(EnemyInstance.Aggressiveness > 5)
+				ClampedAggressiveness = ((float) EnemyInstance.Aggressiveness - 5.0f)/5.0f * 1.0f;
+
+			float ClampedTightness = 0;
+			if(EnemyInstance.Tightness == 5)
+				ClampedTightness = 0;
+
+			else if(EnemyInstance.Tightness < 5)
+				ClampedTightness = (5.0f - (float) EnemyInstance.Tightness)/5.0f * 1.0f;
+
+			else if(EnemyInstance.Tightness > 5)
+				ClampedTightness = ((float) EnemyInstance.Tightness - 5.0f)/5.0f * -1.0f;
+
+			MinTopHandLevel = 16 + (int) (ClampedAggressiveness * 3.0f) + (int) (ClampedTightness * 2.0f);
+
+			LinkedListNode<Card[]> TraverseNode = PossibleHands.First;
+
+			for(int HandIndex = 0; HandIndex < PossibleHands.Count; HandIndex++)
+			{
+				if(Evaluator.IsFirstHandSuperiorOverSecond(TraverseNode.Value,PlayerHand) && Evaluator.DetermineHandLevelINT(TraverseNode.Value) >= MinTopHandLevel)
+					SuperiorHands.Add(TraverseNode.Value);
+
+				TraverseNode = TraverseNode.Next;
+			}
+
+			SuperiorHands = Utility.SortListOfHands(SuperiorHands,false);
+
+			CardComboToFormHands = new List<CardCombo>();
+			for(int HandIndex = 0; HandIndex < SuperiorHands.Count; HandIndex++)
+			{
+				List<Card> Combo = new List<Card>();
+
+				for(int CombinationCardIndex = 0; CombinationCardIndex < SuperiorHands[HandIndex].Length; CombinationCardIndex++)
+				{
+					bool IsCardUnique = true;
+
+					for(int PocketIndex = 0; PocketIndex < PlayerInstance.Pocket.Count; PocketIndex++)
+					{
+						if(Utility.IsTwoCardsIdentical(SuperiorHands[HandIndex][CombinationCardIndex],PlayerInstance.Pocket[PocketIndex]))
+							IsCardUnique = false;
+					}
+
+					for(int CardIndex = 0; CardIndex < PlayerHand.Length; CardIndex++)
+					{
+						if(Utility.IsTwoCardsIdentical(SuperiorHands[HandIndex][CombinationCardIndex],PlayerHand[CardIndex]))
+							IsCardUnique = false;
+					}
+
+					if(IsCardUnique)
+						Combo.Add(SuperiorHands[HandIndex][CombinationCardIndex]);
+				}
+
+				CardCombo NewCombo = new CardCombo();
+				NewCombo.Combo = Combo.ToArray();
+				NewCombo.Value = Evaluator.DetermineHandLevelINT(SuperiorHands[HandIndex]);
+
+				CardComboToFormHands.Add(NewCombo);
+			}
+
+			CurrentPhase = Phase.One;
+		}
+
+		//PHASE 1 - FIND THE 1ST SUITABLE CARD TO MAKE THE PLAY
+		//DETERMINE IF THERE'S EVEN A CARD THAT CAN HELP TO FORM THE MOST SUPERIOR HAND COMBINATION, BID FOR IT
+		//ELSE, FORFEIT THIS AUCTION PHASE
+		if(CurrentPhase == Phase.One)
+		{
+			ComboCanBePursued = new List<CardCombo>();
+
+			int HighestComboValue = 0;
+			CardCombo HighestCombo = new CardCombo();
+			Card HighestComboCard = new Card(Suits.Clubs,Values.Two);
+
+			for(int CardIndex = 0; CardIndex < GMInstance.Table.Pool.Count; CardIndex++)
+			{
+				for(int ComboIndex = 0; ComboIndex < CardComboToFormHands.Count; ComboIndex++)
+				{
+					for(int ComboCardIndex = 0; ComboCardIndex < CardComboToFormHands[ComboIndex].Combo.Length; ComboCardIndex++)
+					{
+						if(Utility.IsTwoCardsIdentical(GMInstance.Table.Pool[CardIndex],CardComboToFormHands[ComboIndex].Combo[ComboCardIndex])
+						   && CardComboToFormHands[ComboIndex].Value >= HighestComboValue)
+						{
+							HighestComboValue = CardComboToFormHands[ComboIndex].Value;
+							HighestCombo = CardComboToFormHands[ComboIndex];
+							HighestComboCard = GMInstance.Table.Pool[CardIndex];
+							ComboCanBePursued.Add(CardComboToFormHands[ComboIndex]);
+						}
+					}
+				}
+			}
+
+			ComboToBePursued = HighestCombo;
+			CurrentCombo = HighestCombo;
+
+			if(ComboCanBePursued.Count <= 0)
+				return AuctionDecision.Forfeit;
+
+			PlayerInstance.SelectedCardForAuction = HighestComboCard;
+			CurrentBiddingCard = HighestComboCard;
+			return AuctionDecision.NULL;
+		}
+
+		//PHASE 2 - BIDDING FOR 1ST CARD
+		//BID VALUELY, DO NOT COMMIT TOO MUCH TO THE BIDDING PROCESS
+		else if(CurrentPhase == Phase.Two)
+		{
+			if(PriceLimitForBidding[0] == 0.0f && PriceLimitForBidding[1] == 0.0f)
+			{
+				float StackToPot = GMInstance.Table.GetEffectiveStackSize() / GMInstance.Table.Pot;
+				if(StackToPot >= 3.5f && StackToPot < 5.5f)
+				{
+					PriceLimitForBidding[0] = 0.75f * GMInstance.Table.Pot;
+					PriceLimitForBidding[1] = 0.75f * GMInstance.Table.Pot;
+				}
+				else if(StackToPot >= 5.5f && StackToPot < 7.0f)
+				{
+					PriceLimitForBidding[0] = 1.25f * GMInstance.Table.Pot;
+					PriceLimitForBidding[1] = 0.75f * GMInstance.Table.Pot;
+				}
+				else if(StackToPot >= 7.0f && StackToPot < 9.0f)
+				{
+					PriceLimitForBidding[0] = 1.125f * GMInstance.Table.Pot;
+					PriceLimitForBidding[1] = 1.125f * GMInstance.Table.Pot;
+				}
+				else if(StackToPot >= 9.0f && StackToPot < 13.0f)
+				{
+					PriceLimitForBidding[0] = 1.375f * GMInstance.Table.Pot;
+					PriceLimitForBidding[1] = 1.125f * GMInstance.Table.Pot;
+				}
+				else if(StackToPot >= 13.0f)
+				{
+					PriceLimitForBidding[0] = 1.5f * GMInstance.Table.Pot;
+					PriceLimitForBidding[1] = 1.5f * GMInstance.Table.Pot;
+				}
+			}
+
+			List<Card> PoolRanking = new List<Card>(GMInstance.Table.Pool);
+
+			for(int FirstIndex = 0; FirstIndex < PoolRanking.Count - 1; FirstIndex++)
+			{
+				for(int SecondIndex = FirstIndex + 1; SecondIndex < PoolRanking.Count; SecondIndex++)
+				{
+					if(PoolRanking[FirstIndex].Value <  PoolRanking[SecondIndex].Value)
+					{
+						Card TempCard = PoolRanking[FirstIndex];
+						PoolRanking[FirstIndex] = PoolRanking[SecondIndex];
+						PoolRanking[SecondIndex] = TempCard;
+					}
+					else if(PoolRanking[FirstIndex].Value == PoolRanking[SecondIndex].Value)
+					{
+						if(PoolRanking[FirstIndex].Suit < PoolRanking[SecondIndex].Suit)
+						{
+							Card TempCard = PoolRanking[FirstIndex];
+							PoolRanking[FirstIndex] = PoolRanking[SecondIndex];
+							PoolRanking[SecondIndex] = TempCard;
+						}
+					}
+				} 
+			}
+
+			int BiddingCardRank = 0;
+
+			for(int PoolIndex = 0; PoolIndex < PoolRanking.Count; PoolIndex++)
+			{
+				if(CurrentBiddingCard.Suit == PoolRanking[PoolIndex].Suit && CurrentBiddingCard.Value == PoolRanking[PoolIndex].Value)
+				{
+					BiddingCardRank = PoolIndex + 1;
+					break;
+				}
+			}
+
+			float ClampedAggressiveness = 0.0f;
+
+			if(EnemyInstance.Aggressiveness == 5)
+			{
+				ClampedAggressiveness = 0.0f;
+			}
+			else if(EnemyInstance.Aggressiveness < 5)
+			{
+				ClampedAggressiveness = (5.0f - (float) EnemyInstance.Aggressiveness) * -1.0f;
+			}
+			else if(EnemyInstance.Aggressiveness > 5)
+			{
+				ClampedAggressiveness = ((float) EnemyInstance.Aggressiveness - 5.0f) * 1.0f;
+			}
+
+			float BiddingAmount = BiddingCardRank * 0.25f + ClampedAggressiveness * 0.05f;
+			BiddingAmount = Mathf.Clamp(BiddingAmount,0.0f, PriceLimitForBidding[0]);
+
+			PlayerInstance.RaiseValue = (int) BiddingAmount;
+			return AuctionDecision.Bid;
+		}
+
+		//PHASE 3 - FIND THE 2ND SUITABLE CARD TO MAKE THE PLAY
+		//DETERMINE IF THERE'S EVEN A CARD THAT CAN HELP TO FORM THE MOST SUPERIOR HAND COMBINATION, BID FOR IT
+		//ELSE, FORFEIT THIS AUCTION PHASE
+		else if(CurrentPhase == Phase.Three)
+		{
+			Card NextCardToBid = new Card(Suits.Clubs,Values.Two);
+	
+			for(int PoolIndex = 0; PoolIndex < GMInstance.Table.Pool.Count; PoolIndex++)
+			{
+				for(int ComboCardIndex = 0; ComboCardIndex < ComboToBePursued.Combo.Length; ComboCardIndex++)
+				{
+					if(Utility.IsTwoCardsIdentical(ComboToBePursued.Combo[ComboCardIndex],GMInstance.Table.Pool[PoolIndex]))
+					{
+						NextCardToBid = ComboToBePursued.Combo[ComboCardIndex];
+						break;
+					}
+				}
+			}
+
+			if(NextCardToBid == null)
+			{
+				int HighestComboValue = 0;
+				CardCombo HighestCombo = new CardCombo();
+				Card HighestComboCard = new Card(Suits.Clubs,Values.Two);
+
+				for(int PoolIndex = 0; PoolIndex < GMInstance.Table.Pool.Count; PoolIndex++)
+				{
+					for(int ComboIndex = 0; ComboIndex < ComboCanBePursued.Count; ComboIndex++)
+					{
+						bool DoesComboHasPreviouslyBiddedCard = false;
+
+						for(int CardIndex = 0; CardIndex < ComboCanBePursued[ComboIndex].Combo.Length; CardIndex++)
+						{
+							if(Utility.IsTwoCardsIdentical(ComboCanBePursued[ComboIndex].Combo[CardIndex],PlayerInstance.Pocket[0]))
+							{
+								DoesComboHasPreviouslyBiddedCard = true;
+								break;
+							}	
+						}
+
+						if(!DoesComboHasPreviouslyBiddedCard)
+							continue;
+
+						
+						if(!Utility.IsTwoCardsIdentical(CurrentCombo.Combo[0],ComboCanBePursued[ComboIndex].Combo[0]) || 
+						   !Utility.IsTwoCardsIdentical(CurrentCombo.Combo[1],ComboCanBePursued[ComboIndex].Combo[1]))
+						{
+							for(int ComboCardIndex = 0; ComboCardIndex < ComboCanBePursued[ComboIndex].Combo.Length; ComboCardIndex++)
+							{
+								if(Utility.IsTwoCardsIdentical(GMInstance.Table.Pool[PoolIndex],ComboCanBePursued[ComboIndex].Combo[ComboCardIndex])
+								   && ComboCanBePursued[ComboIndex].Value >= HighestComboValue)
+								{
+									HighestComboValue = ComboCanBePursued[ComboIndex].Value;
+									HighestCombo = ComboCanBePursued[ComboIndex];
+									HighestComboCard = GMInstance.Table.Pool[ComboCardIndex];
+								}
+							}
+
+						}
+					}
+				}
+
+				if(HighestCombo.Combo != null)
+				{
+					CurrentCombo = HighestCombo;
+					ComboToBePursued = HighestCombo;
+
+					for(int PoolIndex = 0; PoolIndex < GMInstance.Table.Pool.Count; PoolIndex++)
+					{
+						for(int ComboCardIndex = 0; ComboCardIndex < HighestCombo.Combo.Length; ComboCardIndex++)
+						{
+							if(Utility.IsTwoCardsIdentical(ComboToBePursued.Combo[ComboCardIndex],GMInstance.Table.Pool[PoolIndex]))
+							{
+								NextCardToBid = ComboToBePursued.Combo[ComboCardIndex];
+								break;
+							}
+						}
+					}
+
+
+				}
+			}
+
+			if(NextCardToBid == null)
+				return AuctionDecision.Forfeit;
+
+			PlayerInstance.SelectedCardForAuction = NextCardToBid;
+			CurrentBiddingCard = NextCardToBid;
+			return AuctionDecision.NULL;
+		}
+
+		//PHASE 4 - BIDDING FOR 2ND CARD
+		//BID VALUELY, DO NOT COMMIT TOO MUCH TO THE BIDDING PROCESS
+		else if(CurrentPhase == Phase.Four)
+		{
+			List<Card> PoolRanking = new List<Card>(GMInstance.Table.Pool);
+
+			for(int FirstIndex = 0; FirstIndex < PoolRanking.Count - 1; FirstIndex++)
+			{
+				for(int SecondIndex = FirstIndex + 1; SecondIndex < PoolRanking.Count; SecondIndex++)
+				{
+					if(PoolRanking[FirstIndex].Value <  PoolRanking[SecondIndex].Value)
+					{
+						Card TempCard = PoolRanking[FirstIndex];
+						PoolRanking[FirstIndex] = PoolRanking[SecondIndex];
+						PoolRanking[SecondIndex] = TempCard;
+					}
+					else if(PoolRanking[FirstIndex].Value == PoolRanking[SecondIndex].Value)
+					{
+						if(PoolRanking[FirstIndex].Suit < PoolRanking[SecondIndex].Suit)
+						{
+							Card TempCard = PoolRanking[FirstIndex];
+							PoolRanking[FirstIndex] = PoolRanking[SecondIndex];
+							PoolRanking[SecondIndex] = TempCard;
+						}
+					}
+				} 
+			}
+
+			int BiddingCardRank = 0;
+
+			for(int PoolIndex = 0; PoolIndex < PoolRanking.Count; PoolIndex++)
+			{
+				if(CurrentBiddingCard.Suit == PoolRanking[PoolIndex].Suit && CurrentBiddingCard.Value == PoolRanking[PoolIndex].Value)
+				{
+					BiddingCardRank = PoolIndex + 1;
+					break;
+				}
+			}
+
+			float ClampedAggressiveness = 0.0f;
+
+			if(EnemyInstance.Aggressiveness == 5)
+			{
+				ClampedAggressiveness = 0.0f;
+			}
+			else if(EnemyInstance.Aggressiveness < 5)
+			{
+				ClampedAggressiveness = (5.0f - (float) EnemyInstance.Aggressiveness) * -1.0f;
+			}
+			else if(EnemyInstance.Aggressiveness > 5)
+			{
+				ClampedAggressiveness = ((float) EnemyInstance.Aggressiveness - 5.0f) * 1.0f;
+			}
+
+			float BiddingAmount = BiddingCardRank * 0.25f + ClampedAggressiveness * 0.05f;
+			BiddingAmount = Mathf.Clamp(BiddingAmount,0.0f, PriceLimitForBidding[1]);
+
+			PlayerInstance.RaiseValue = (int) BiddingAmount;
+
+			return AuctionDecision.Bid;
+		}
+
+		//PHASE 5 - PURCHASING OF A CARD
+		//IF PLAYER HASN'T GOTTEN A SUPERIOR HAND COMBINATION, PURCHASE A NEW CARD
+		else if(CurrentPhase == Phase.Five)
+		{
+			if(CurrentCombo.Combo.Length > 2)
+			{
+				PlayerInstance.Stack -= GMInstance.Auction.CostOfRandomCard;
+				PlayerInstance.OnTheBet += GMInstance.Auction.CostOfRandomCard;
+			
+				Card CardPurchased = GMInstance.Deck.DrawSingle();
+				PlayerInstance.AddCardToPocket(CardPurchased);
+				PlayerInstance.CardsAuctioned.Add(CardPurchased);
+
+			}
+
+			//AS AUCTION END HERE AND SORTING/SHOWDOWN WILL IMMEDIATELY HAPPEN, THIS PLAY WILL BE COMPLETED 
+			EndPlay();
+			return AuctionDecision.NULL;
+		}
+
+		return AuctionDecision.NULL;
+	}
+
+	public override void EndPlay ()
+	{
+		CardComboToFormHands = null;
+		CurrentPhase = Phase.NULL;
+		PlayInUse = false;
+
+		TopTierHandLevel = new int[17];
+		CardComboToFormHands.Clear();
+		ComboCanBePursued.Clear();
+		PriceLimitForBidding = new float[2];
+
+		CurrentCombo = new CardCombo();
+		CurrentBiddingCard = null;
+		ComboToBePursued = new CardCombo();
+	}
+}

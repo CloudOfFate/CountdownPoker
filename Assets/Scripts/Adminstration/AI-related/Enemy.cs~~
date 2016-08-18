@@ -1,0 +1,201 @@
+﻿using UnityEngine;
+using System.Collections;
+
+public class Enemy
+{
+	private Player m_Player;
+	
+	private int m_Aggressiveness;
+	private int m_Liability;
+	private int m_Predictability;
+	public int Aggressiveness{get{return m_Aggressiveness;} set{m_Aggressiveness = value;}}
+	public int Liability{get{return m_Liability;} set{m_Liability = value;}}
+	public int Predictability{get{return m_Predictability;} set{m_Predictability = value;}}
+
+	private FuzzyModule m_CallingModule;
+	public FuzzyModule CallingModule{get{return m_CallingModule;} set{m_CallingModule = value;}}
+	private FuzzyModule m_RaisingModule;
+	public FuzzyModule RaisingModule{get{return m_RaisingModule;} set{m_RaisingModule = value;}}
+	private FuzzyModule m_BiddingModule;
+	public FuzzyModule BiddingModule{get{return m_BiddingModule;} set{m_BiddingModule = value;}}
+	private FuzzyModule m_PurchasingModule;
+	public FuzzyModule PurchasingModule{get{return m_PurchasingModule;} set{m_PurchasingModule = value;}}
+
+	public Enemy(Player _player, int _aggressiveness, int _liability, int _predictability)
+	{
+		m_Player = _player;
+		m_Aggressiveness = _aggressiveness;
+		m_Liability = _liability;
+		m_Predictability = _predictability;
+		
+		m_CallingModule = new FuzzyModule();
+		m_CallingModule.CreateFuzzyVariable("Hand Value");
+		m_CallingModule.CreateFuzzyVariable("Aggressiveness");
+		m_CallingModule.CreateFuzzyVariable("Money In Pot");
+		m_CallingModule.CreateFuzzyVariable("Money Required To Call");
+		m_CallingModule.CreateFuzzyVariable("Desirability");
+		
+		m_CallingModule.Variables["Hand Value"].AddLeftDiagonalSet("HandValue_Low",0.0f,5.0f);
+		m_CallingModule.Variables["Hand Value"].AddCentreTrapeziumSet("HandValue_Medium",5.0f,8.0f,0.0f,20.0f);
+		m_CallingModule.Variables["Hand Value"].AddRightShoulderSet("HandValue_High",20.0f,8.0f,40.0f);
+		
+		m_CallingModule.Variables["Aggressiveness"].AddLeftShoulderSet("Aggressiveness_Defensive",2.5f,0.0f,5.0f);
+		m_CallingModule.Variables["Aggressiveness"].AddTriangularSet("Aggressiveness_Neutral",5.0f,2.5f,7.5f);
+		m_CallingModule.Variables["Aggressiveness"].AddRightShoulderSet("Aggressiveness_Aggressive",7.5f,5.0f,10.0f);
+		
+		m_CallingModule.Variables["Money In Pot"].AddLeftShoulderSet("PotMoney_Low",25.0f,0.0f,50.0f);
+		m_CallingModule.Variables["Money In Pot"].AddTriangularSet("PotMoney_Medium",75.0f,25.0f,200.0f);
+		m_CallingModule.Variables["Money In Pot"].AddRightShoulderSet("PotMoney_High",200.0f,100.0f,300.0f);
+		
+//		m_CallingModule.Variables["Player's Money"].AddLeftDiagonalSet("PlayerMoney_Low",0.0f,50.0f);
+//		m_CallingModule.Variables["Player's Money"].AddTriangularSet("PlayerMoney_Medium",100.0f,50.0f,200.0f);
+//		m_CallingModule.Variables["Player's Money"].AddRightShoulderSet("PlayerMoney_High",200.0f,100.0f,300.0f);
+		
+		m_CallingModule.Variables["Money Required To Call"].AddLeftDiagonalSet("CallMoney_Low",0.0f,25.0f);
+		m_CallingModule.Variables["Money Required To Call"].AddTriangularSet("CallMoney_Medium",25.0f,0.0f,50.0f);
+		m_CallingModule.Variables["Money Required To Call"].AddRightShoulderSet("CallMoney_High",75.0f,25.0f,100.0f);
+		
+//		m_CallingModule.Variables["Earnings"].AddLeftShoulderSet("Earning_Low",25.0f,0.0f,50.0f);
+//		m_CallingModule.Variables["Earnings"].AddTriangularSet("Earning_Medium",50.0f,25.0f,75.0f);
+//		m_CallingModule.Variables["Earnings"].AddRightShoulderSet("Earning_High",75.0f,50.0f,100.0f);
+		
+		m_CallingModule.Variables["Desirability"].AddLeftShoulderSet("Undesirable",25.0f,0.0f,60.0f);
+		m_CallingModule.Variables["Desirability"].AddRightShoulderSet("Desirable",75.0f,40.0f,100.0f);
+		
+		for(int i = 0; i < DecisionReference.CallingsReference.Length; i++)
+		{
+			FuzzySET Aggressiveness = new FuzzySET(m_CallingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Defensive"]);
+			if(DecisionReference.CallingsReference[i].Aggressiveness == AggressiveLevel.Defensive){Aggressiveness = new FuzzySET(m_CallingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Defensive"]);}
+			else if(DecisionReference.CallingsReference[i].Aggressiveness == AggressiveLevel.Neutral){Aggressiveness = new FuzzySET(m_CallingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Neutral"]);}
+			else if(DecisionReference.CallingsReference[i].Aggressiveness == AggressiveLevel.Aggressive){Aggressiveness = new FuzzySET(m_CallingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Aggressive"]);}
+			
+			FuzzySET Value = new FuzzySET(m_CallingModule.Variables["Hand Value"].Sets["HandValue_Low"]);
+			if(DecisionReference.CallingsReference[i].HandValues == ValueOfHand.Low){Value = new FuzzySET(m_CallingModule.Variables["Hand Value"].Sets["HandValue_Low"]);}
+			else if(DecisionReference.CallingsReference[i].HandValues == ValueOfHand.Medium){Value = new FuzzySET(m_CallingModule.Variables["Hand Value"].Sets["HandValue_Medium"]);}
+			else if(DecisionReference.CallingsReference[i].HandValues == ValueOfHand.High){Value = new FuzzySET(m_CallingModule.Variables["Hand Value"].Sets["HandValue_High"]);}
+			
+			FuzzySET MoneyUsedToCall = new FuzzySET(m_CallingModule.Variables["Money Required To Call"].Sets["CallMoney_Low"]);
+			if(DecisionReference.CallingsReference[i].MoneyRequiredToCall == MoneyRequiredToCall.Low){MoneyUsedToCall = new FuzzySET(m_CallingModule.Variables["Money Required To Call"].Sets["CallMoney_Low"]);}
+			else if(DecisionReference.CallingsReference[i].MoneyRequiredToCall == MoneyRequiredToCall.Medium){MoneyUsedToCall = new FuzzySET(m_CallingModule.Variables["Money Required To Call"].Sets["CallMoney_Medium"]);}
+			else if(DecisionReference.CallingsReference[i].MoneyRequiredToCall == MoneyRequiredToCall.High){MoneyUsedToCall = new FuzzySET(m_CallingModule.Variables["Money Required To Call"].Sets["CallMoney_High"]);}
+			
+			FuzzySET PotMoney = new FuzzySET(m_CallingModule.Variables["Money In Pot"].Sets["PotMoney_Low"]);
+			if(DecisionReference.CallingsReference[i].MoneyInPot == MoneyInPot.Low){PotMoney = new FuzzySET(m_CallingModule.Variables["Money In Pot"].Sets["PotMoney_Low"]);}
+			else if(DecisionReference.CallingsReference[i].MoneyInPot == MoneyInPot.Medium){PotMoney = new FuzzySET(m_CallingModule.Variables["Money In Pot"].Sets["PotMoney_Medium"]);}
+			else if(DecisionReference.CallingsReference[i].MoneyInPot == MoneyInPot.High){PotMoney = new FuzzySET(m_CallingModule.Variables["Money In Pot"].Sets["PotMoney_High"]);}
+			
+			FuzzySET DesirabilityLevel = new FuzzySET(m_CallingModule.Variables["Desirability"].Sets["Undesirable"]);
+			if(DecisionReference.CallingsReference[i].Desirability == Desirability.Undesirable){DesirabilityLevel = new FuzzySET(m_CallingModule.Variables["Desirability"].Sets["Undesirable"]);}
+			else if(DecisionReference.CallingsReference[i].Desirability == Desirability.Undesirable){DesirabilityLevel = new FuzzySET(m_CallingModule.Variables["Desirability"].Sets["Undesirable"]);}
+		
+			m_CallingModule.AddRule(new FuzzyAND(Aggressiveness,Value,MoneyUsedToCall,PotMoney),DesirabilityLevel);
+		}
+		
+		m_RaisingModule = new FuzzyModule();
+		m_RaisingModule.CreateFuzzyVariable("Hand Value");
+		m_RaisingModule.CreateFuzzyVariable("Aggressiveness");
+		m_RaisingModule.CreateFuzzyVariable("Money In Pot");
+		m_RaisingModule.CreateFuzzyVariable("Player's Money");
+		m_RaisingModule.CreateFuzzyVariable("Desirability");
+		
+		m_RaisingModule.Variables["Hand Value"].AddLeftDiagonalSet("HandValue_Low",0.0f,5.0f);
+		m_RaisingModule.Variables["Hand Value"].AddCentreTrapeziumSet("HandValue_Medium",5.0f,8.0f,0.0f,20.0f);
+		m_RaisingModule.Variables["Hand Value"].AddRightShoulderSet("HandValue_High",20.0f,8.0f,40.0f);
+		
+		m_RaisingModule.Variables["Aggressiveness"].AddLeftShoulderSet("Aggressiveness_Defensive",2.5f,0.0f,5.0f);
+		m_RaisingModule.Variables["Aggressiveness"].AddTriangularSet("Aggressiveness_Neutral",5.0f,2.5f,7.5f);
+		m_RaisingModule.Variables["Aggressiveness"].AddRightShoulderSet("Aggressiveness_Aggressive",7.5f,5.0f,10.0f);
+		
+		m_RaisingModule.Variables["Money In Pot"].AddLeftShoulderSet("PotMoney_Low",25.0f,0.0f,50.0f);
+		m_RaisingModule.Variables["Money In Pot"].AddTriangularSet("PotMoney_Medium",75.0f,25.0f,200.0f);
+		m_RaisingModule.Variables["Money In Pot"].AddRightShoulderSet("PotMoney_High",200.0f,100.0f,300.0f);
+		
+		m_RaisingModule.Variables["Player's Money"].AddLeftDiagonalSet("PlayerMoney_Low",0.0f,50.0f);
+		m_RaisingModule.Variables["Player's Money"].AddTriangularSet("PlayerMoney_Medium",100.0f,50.0f,200.0f);
+		m_RaisingModule.Variables["Player's Money"].AddRightShoulderSet("PlayerMoney_High",200.0f,100.0f,300.0f);
+		
+		m_RaisingModule.Variables["Desirability"].AddLeftShoulderSet("Undesirable",25.0f,0.0f,60.0f);
+		m_RaisingModule.Variables["Desirability"].AddRightShoulderSet("Desirable",75.0f,40.0f,100.0f);
+		
+		for(int i = 0; i < DecisionReference.RaisingsReference.Length; i++)
+		{
+			FuzzySET Aggressiveness = new FuzzySET(m_RaisingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Defensive"]);
+			if(DecisionReference.RaisingsReference[i].Aggressiveness == AggressiveLevel.Defensive){Aggressiveness = new FuzzySET(m_RaisingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Defensive"]);}
+			else if(DecisionReference.RaisingsReference[i].Aggressiveness == AggressiveLevel.Neutral){Aggressiveness = new FuzzySET(m_RaisingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Neutral"]);}
+			else if(DecisionReference.RaisingsReference[i].Aggressiveness == AggressiveLevel.Aggressive){Aggressiveness = new FuzzySET(m_RaisingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Aggressive"]);}
+			
+			FuzzySET Value = new FuzzySET(m_RaisingModule.Variables["Hand Value"].Sets["HandValue_Low"]);
+			if(DecisionReference.RaisingsReference[i].HandValue == ValueOfHand.Low){Value = new FuzzySET(m_RaisingModule.Variables["Hand Value"].Sets["HandValue_Low"]);}
+			else if(DecisionReference.RaisingsReference[i].HandValue == ValueOfHand.Medium){Value = new FuzzySET(m_RaisingModule.Variables["Hand Value"].Sets["HandValue_Medium"]);}
+			else if(DecisionReference.RaisingsReference[i].HandValue == ValueOfHand.High){Value = new FuzzySET(m_RaisingModule.Variables["Hand Value"].Sets["HandValue_High"]);}
+			
+			FuzzySET PlayerMoney = new FuzzySET(m_RaisingModule.Variables["Player's Money"].Sets["PlayerMoney_Low"]);
+			if(DecisionReference.RaisingsReference[i].PlayerMoney == MoneyRequiredToCall.Low){PlayerMoney = new FuzzySET(m_RaisingModule.Variables["Player's Money"].Sets["PlayerMoney_Low"]);}
+			else if(DecisionReference.RaisingsReference[i].PlayerMoney == MoneyRequiredToCall.Medium){PlayerMoney = new FuzzySET(m_RaisingModule.Variables["Player's Money"].Sets["PlayerMoney_Medium"]);}
+			else if(DecisionReference.RaisingsReference[i].PlayerMoney == MoneyRequiredToCall.High){PlayerMoney = new FuzzySET(m_RaisingModule.Variables["Player's Money"].Sets["PlayerMoney_High"]);}
+			
+			FuzzySET PotMoney = new FuzzySET(m_RaisingModule.Variables["Money In Pot"].Sets["PotMoney_Low"]);
+			if(DecisionReference.RaisingsReference[i].MoneyInPot == MoneyInPot.Low){PotMoney = new FuzzySET(m_RaisingModule.Variables["Money In Pot"].Sets["PotMoney_Low"]);}
+			else if(DecisionReference.RaisingsReference[i].MoneyInPot == MoneyInPot.Medium){PotMoney = new FuzzySET(m_RaisingModule.Variables["Money In Pot"].Sets["PotMoney_Medium"]);}
+			else if(DecisionReference.RaisingsReference[i].MoneyInPot == MoneyInPot.High){PotMoney = new FuzzySET(m_RaisingModule.Variables["Money In Pot"].Sets["PotMoney_High"]);}
+			
+			FuzzySET DesirabilityLevel = new FuzzySET(m_RaisingModule.Variables["Desirability"].Sets["Undesirable"]);
+			if(DecisionReference.RaisingsReference[i].Desirability == Desirability.Undesirable){DesirabilityLevel = new FuzzySET(m_RaisingModule.Variables["Desirability"].Sets["Undesirable"]);}
+			else if(DecisionReference.RaisingsReference[i].Desirability == Desirability.Undesirable){DesirabilityLevel = new FuzzySET(m_RaisingModule.Variables["Desirability"].Sets["Undesirable"]);}
+			
+			m_RaisingModule.AddRule(new FuzzyAND(Aggressiveness,Value,PlayerMoney,PotMoney),DesirabilityLevel);
+		}
+		
+		m_BiddingModule = new FuzzyModule();
+		m_BiddingModule.CreateFuzzyVariable("Projected Hand Value");
+		m_BiddingModule.CreateFuzzyVariable("Aggressiveness");
+		m_BiddingModule.CreateFuzzyVariable("Earnings");
+		m_BiddingModule.CreateFuzzyVariable("Player's Money");
+		m_BiddingModule.CreateFuzzyVariable("Desirability");
+		
+		m_BiddingModule.Variables["Aggressiveness"].AddLeftShoulderSet("Aggressiveness_Defensive",2.5f,0.0f,5.0f);
+		m_BiddingModule.Variables["Aggressiveness"].AddTriangularSet("Aggressiveness_Neutral",5.0f,2.5f,7.5f);
+		m_BiddingModule.Variables["Aggressiveness"].AddRightShoulderSet("Aggressiveness_Aggressive",7.5f,5.0f,10.0f);
+		
+		m_BiddingModule.Variables["Projected Hand Value"].AddLeftDiagonalSet("HandValue_Low",0.0f,5.0f);
+		m_BiddingModule.Variables["Projected Hand Value"].AddCentreTrapeziumSet("HandValue_Medium",5.0f,8.0f,0.0f,20.0f);
+		m_BiddingModule.Variables["Projected Hand Value"].AddRightShoulderSet("HandValue_High",20.0f,8.0f,40.0f);
+		
+		m_BiddingModule.Variables["Player's Money"].AddLeftDiagonalSet("PlayerMoney_Low",0.0f,50.0f);
+		m_BiddingModule.Variables["Player's Money"].AddTriangularSet("PlayerMoney_Medium",100.0f,50.0f,200.0f);
+		m_BiddingModule.Variables["Player's Money"].AddRightShoulderSet("PlayerMoney_High",200.0f,100.0f,300.0f);
+		
+		m_BiddingModule.Variables["Earnings"].AddLeftShoulderSet("Earning_Low",25.0f,0.0f,50.0f);
+		m_BiddingModule.Variables["Earnings"].AddTriangularSet("Earning_Medium",50.0f,25.0f,75.0f);
+		m_BiddingModule.Variables["Earnings"].AddRightShoulderSet("Earning_High",75.0f,50.0f,100.0f);
+		
+		for(int i = 0; i < DecisionReference.BiddingsReference.Length; i++)
+		{
+			FuzzySET Aggressiveness = new FuzzySET(m_BiddingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Defensive"]);
+			if(DecisionReference.BiddingsReference[i].Aggressiveness == AggressiveLevel.Defensive){Aggressiveness = new FuzzySET(m_BiddingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Defensive"]);}
+			else if(DecisionReference.BiddingsReference[i].Aggressiveness == AggressiveLevel.Neutral){Aggressiveness = new FuzzySET(m_BiddingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Neutral"]);}
+			else if(DecisionReference.BiddingsReference[i].Aggressiveness == AggressiveLevel.Aggressive){Aggressiveness = new FuzzySET(m_BiddingModule.Variables["Aggressiveness"].Sets["Aggressiveness_Aggressive"]);}
+			
+			FuzzySET ProjectedValue = new FuzzySET(m_BiddingModule.Variables["ProjectedHand Value"].Sets["HandValue_Low"]);
+			if(DecisionReference.BiddingsReference[i].ProjectedHandValue == ValueOfProjectedHand.Low){Value = new FuzzySET(m_BiddingModule.Variables["Projected Hand Value"].Sets["HandValue_Low"]);}
+			else if(DecisionReference.BiddingsReference[i].ProjectedHandValue == ValueOfProjectedHand.Medium){Value = new FuzzySET(m_BiddingModule.Variables["Projected Hand Value"].Sets["HandValue_Medium"]);}
+			else if(DecisionReference.BiddingsReference[i].ProjectedHandValue == ValueOfProjectedHand.High){Value = new FuzzySET(m_BiddingModule.Variables["Projected Hand Value"].Sets["HandValue_High"]);}
+			
+			FuzzySET PlayerMoney = new FuzzySET(m_BiddingModule.Variables["Player's Money"].Sets["PlayerMoney_Low"]);
+			if(DecisionReference.BiddingsReference[i].PlayerMoney == MoneyRequiredToCall.Low){PlayerMoney = new FuzzySET(m_BiddingModule.Variables["Player's Money"].Sets["PlayerMoney_Low"]);}
+			else if(DecisionReference.BiddingsReference[i].PlayerMoney == MoneyRequiredToCall.Medium){PlayerMoney = new FuzzySET(m_BiddingModule.Variables["Player's Money"].Sets["PlayerMoney_Medium"]);}
+			else if(DecisionReference.BiddingsReference[i].PlayerMoney == MoneyRequiredToCall.High){PlayerMoney = new FuzzySET(m_BiddingModule.Variables["Player's Money"].Sets["PlayerMoney_High"]);}
+			
+			FuzzySET PotMoney = new FuzzySET(m_BiddingModule.Variables["Money In Pot"].Sets["PotMoney_Low"]);
+			if(DecisionReference.BiddingsReference[i].MoneyInPot == MoneyInPot.Low){PotMoney = new FuzzySET(m_BiddingModule.Variables["Money In Pot"].Sets["PotMoney_Low"]);}
+			else if(DecisionReference.BiddingsReference[i].MoneyInPot == MoneyInPot.Medium){PotMoney = new FuzzySET(m_BiddingModule.Variables["Money In Pot"].Sets["PotMoney_Medium"]);}
+			else if(DecisionReference.BiddingsReference[i].MoneyInPot == MoneyInPot.High){PotMoney = new FuzzySET(m_BiddingModule.Variables["Money In Pot"].Sets["PotMoney_High"]);}
+			
+			FuzzySET DesirabilityLevel = new FuzzySET(m_BiddingModule.Variables["Desirability"].Sets["Undesirable"]);
+			if(DecisionReference.BiddingsReference[i].Desirability == Desirability.Undesirable){DesirabilityLevel = new FuzzySET(m_BiddingModule.Variables["Desirability"].Sets["Undesirable"]);}
+			else if(DecisionReference.BiddingsReference[i].Desirability == Desirability.Undesirable){DesirabilityLevel = new FuzzySET(m_BiddingModule.Variables["Desirability"].Sets["Undesirable"]);}
+			
+			m_BiddingModule.AddRule(new FuzzyAND(Aggressiveness,Value,PlayerMoney,PotMoney),DesirabilityLevel);
+		}
+	}	
+}

@@ -1,0 +1,639 @@
+fileFormatVersion: 2
+guid: 839d195636016404f8542b711fdbfcc4
+timeCreated: 1456472278
+licenseType: Free
+TextureImporter:
+  fileIDToRecycleName:
+    21300000: Poker cards sprite_1
+    21300002: Poker cards sprite_2
+    21300004: Poker cards sprite_0
+    21300006: Poker cards sprite_3
+    21300008: Poker cards sprite_4
+    21300010: Poker cards sprite_5
+    21300012: Poker cards sprite_6
+    21300014: Poker cards sprite_7
+    21300016: Poker cards sprite_8
+    21300018: Poker cards sprite_9
+    21300020: Poker cards sprite_10
+    21300022: Poker cards sprite_11
+    21300024: Poker cards sprite_12
+    21300026: Poker cards sprite_13
+    21300028: Poker cards sprite_14
+    21300030: Poker cards sprite_15
+    21300032: Poker cards sprite_16
+    21300034: Poker cards sprite_17
+    21300036: Poker cards sprite_18
+    21300038: Poker cards sprite_19
+    21300040: Poker cards sprite_20
+    21300042: Poker cards sprite_21
+    21300044: Poker cards sprite_22
+    21300046: Poker cards sprite_23
+    21300048: Poker cards sprite_24
+    21300050: Poker cards sprite_25
+    21300052: Poker cards sprite_26
+    21300054: Poker cards sprite_27
+    21300056: Poker cards sprite_28
+    21300058: Poker cards sprite_29
+    21300060: Poker cards sprite_30
+    21300062: Poker cards sprite_31
+    21300064: Poker cards sprite_32
+    21300066: Poker cards sprite_33
+    21300068: Poker cards sprite_34
+    21300070: Poker cards sprite_35
+    21300072: Poker cards sprite_36
+    21300074: Poker cards sprite_37
+    21300076: Poker cards sprite_38
+    21300078: Poker cards sprite_39
+    21300080: Poker cards sprite_40
+    21300082: Poker cards sprite_41
+    21300084: Poker cards sprite_42
+    21300086: Poker cards sprite_43
+    21300088: Poker cards sprite_44
+    21300090: Poker cards sprite_45
+    21300092: Poker cards sprite_46
+    21300094: Poker cards sprite_47
+    21300096: Poker cards sprite_48
+    21300098: Poker cards sprite_49
+    21300100: Poker cards sprite_50
+    21300102: Poker cards sprite_51
+    21300104: Poker cards sprite_52
+  serializedVersion: 2
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 1
+    linearTexture: 0
+    correctGamma: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: .25
+    normalMapFilter: 0
+  isReadable: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 0
+  cubemapConvolution: 0
+  cubemapConvolutionSteps: 8
+  cubemapConvolutionExponent: 1.5
+  seamlessCubemap: 0
+  textureFormat: -1
+  maxTextureSize: 2048
+  textureSettings:
+    filterMode: 0
+    aniso: 16
+    mipBias: -1
+    wrapMode: 1
+  nPOTScale: 0
+  lightmap: 0
+  rGBM: 0
+  compressionQuality: 50
+  allowsAlphaSplitting: 0
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: .5, y: .5}
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spritePixelsToUnits: 100
+  alphaIsTransparency: 1
+  textureType: 8
+  buildTargetSettings: []
+  spriteSheet:
+    sprites:
+    - name: Poker cards sprite_1
+      rect:
+        serializedVersion: 2
+        x: 59
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_2
+      rect:
+        serializedVersion: 2
+        x: 87
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_0
+      rect:
+        serializedVersion: 2
+        x: 31
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_3
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_4
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_5
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_6
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_7
+      rect:
+        serializedVersion: 2
+        x: 227
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_8
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_9
+      rect:
+        serializedVersion: 2
+        x: 283
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_10
+      rect:
+        serializedVersion: 2
+        x: 311
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_11
+      rect:
+        serializedVersion: 2
+        x: 339
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_12
+      rect:
+        serializedVersion: 2
+        x: 3
+        y: 155
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_13
+      rect:
+        serializedVersion: 2
+        x: 31
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_14
+      rect:
+        serializedVersion: 2
+        x: 59
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_15
+      rect:
+        serializedVersion: 2
+        x: 87
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_16
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_17
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_18
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_19
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_20
+      rect:
+        serializedVersion: 2
+        x: 227
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_21
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_22
+      rect:
+        serializedVersion: 2
+        x: 283
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_23
+      rect:
+        serializedVersion: 2
+        x: 311
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_24
+      rect:
+        serializedVersion: 2
+        x: 339
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_25
+      rect:
+        serializedVersion: 2
+        x: 3
+        y: 79
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_26
+      rect:
+        serializedVersion: 2
+        x: 31
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_27
+      rect:
+        serializedVersion: 2
+        x: 59
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_28
+      rect:
+        serializedVersion: 2
+        x: 87
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_29
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_30
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_31
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_32
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_33
+      rect:
+        serializedVersion: 2
+        x: 227
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_34
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_35
+      rect:
+        serializedVersion: 2
+        x: 283
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_36
+      rect:
+        serializedVersion: 2
+        x: 311
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_37
+      rect:
+        serializedVersion: 2
+        x: 339
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_38
+      rect:
+        serializedVersion: 2
+        x: 3
+        y: 41
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_39
+      rect:
+        serializedVersion: 2
+        x: 31
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_40
+      rect:
+        serializedVersion: 2
+        x: 59
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_41
+      rect:
+        serializedVersion: 2
+        x: 87
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_42
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_43
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_44
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_45
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_46
+      rect:
+        serializedVersion: 2
+        x: 227
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_47
+      rect:
+        serializedVersion: 2
+        x: 255
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_48
+      rect:
+        serializedVersion: 2
+        x: 283
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_49
+      rect:
+        serializedVersion: 2
+        x: 311
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_50
+      rect:
+        serializedVersion: 2
+        x: 339
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_51
+      rect:
+        serializedVersion: 2
+        x: 3
+        y: 117
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Poker cards sprite_52
+      rect:
+        serializedVersion: 2
+        x: 31
+        y: 3
+        width: 26
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+  spritePackingTag: 
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -1,0 +1,8 @@
+﻿public class Calling
+{
+	public AggressiveLevel Aggressiveness;
+	public HandValue HandValues;
+	public MoneyRequiredToCall MoneyRequiredToCall;
+	public MoneyInPot MoneyInPot;
+	public Desirability Desirability;
+}
